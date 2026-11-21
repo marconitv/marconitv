@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Marconi TV - Televisión en vivo</title>
+<title>Marconi TV · Televisión en vivo</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.6/es6-shim.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/3.6.2/fetch.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -82,14 +82,14 @@ input[type=range]{width:80px;accent-color:var(--a)}
 .cd:hover{background:var(--a)}
 @media(max-width:640px){.sb{width:100%}.nav .clk,nav .clk{display:none}.card{width:160px;height:90px}input[type=range]{display:none}}
 </style></head><body>
-<nav><div class="logo"><i data-ic="sig"></i>MARCONI<b>TV</b></div><div class="sp"></div>
+<nav><div class="logo"><i data-ic="sig"></i>Marconi<b>TV</b></div><div class="sp"></div>
 <label class="sb"><i data-ic="srch"></i><input id="sq" placeholder="Buscar canal" autocomplete="off"></label><div class="clk"></div></nav>
 <header class="hero"><span class="live"><i></i>En vivo ahora</span>
-<h1>Televisión online, donde quieras verla.</h1>
-<p><span id="cnt"></span> canales en vivo de aire, deportes, noticias, infantiles, cine y series y más. Sin registro, en cualquier pantalla.</p>
-<button class="btn" id="hp">Entrar al reproductor</button><button class="btn g" id="hs">Explorar canales</button></header>
+<h1>La televisión argentina, donde quieras verla.</h1>
+<p><span id="cnt"></span> canales en vivo: aire, deportes, noticias, infantiles y más. Sin registro, en cualquier pantalla.</p>
+<button class="btn" id="hp">Ver Telefe</button><button class="btn g" id="hs">Explorar canales</button></header>
 <div class="chips" id="chips"></div><main id="rows"></main>
-<footer>© Marconi TV - Señal en vivo, sujeta a disponibilidad de cada emisora.</footer>
+<footer>© 2026 Marconi TV · Señal en vivo, sujeta a disponibilidad de cada emisora.</footer>
 
 <div class="pl" id="pl"><video id="v" playsinline webkit-playsinline crossorigin="anonymous" preload="auto"></video><div id="yt" style="display:none;position:absolute;inset:0"></div>
 <div class="st on" id="ld"><span class="rot"></span>Cargando señal…</div>
@@ -199,8 +199,8 @@ dm('hispantv.com',['Hispan TV']);dm('espanol.cgtn.com',['CGTN Español']);
 dm('canalnet.tv',['Net TV']);dm('canalorbe21.com',['Orbe 21']);dm('mariavision.com',['María Visión']);dm('alientovision.com',['Aliento Visión']);
 dm('kanalddrama.com',['Vive Kanal D Drama']);dm('elgarage.com',['El Garage']);dm('revistachacra.com.ar',['Chacra TV']);
 /* Logos propios: pegá la URL de la imagen entre las comillas de cada canal y tiene prioridad sobre el automático */
-var L={'TELEFE':'https://upload.wikimedia.org/wikipedia/commons/c/cc/Telefe_%28nuevo_logo%29.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=thumbnail_unscaled','EL TRECE':'https://upload.wikimedia.org/wikipedia/commons/e/ec/Logo_Canal_13_200_8.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=original',};'NET TV':''
-C.forEach(function(c){if(c[0].indexOf('LPF PLAY')===0)D[c[0]]='';if(!c[3]&&L[c[0]])c[3]=L[c[0]];if(!c[3]&&D[c[0]]){c[3]=G+D[c[0]];c[4]=1}});
+var L={'TyC Sports Fan':'https://www.totalmedios.com/img/noticias/2026/08/6a90d38c2b1d7.jpg','TyC Sports':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiYCIxpPnCHv2xFALL9wh_GDhpaW8_4CY-gixbpCgYDU1le-WKgqWWzs9iDLgQH3PsRRmM7fWA8qKn3zNyaHKR-DwYzLJQjXPjtCguu0V2mt7zqtBbnQZGoTz4BpNK6zfKtmSWzCVBV-kVRhlhMu-rb7DxGb_HbDjFUeZFZ-z04zMA5voP7CIIYEO3SfOA/s256/TyC%20Sports.png','Net TV':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhEetal6QatB2F0nHYtb1lHfMJ7D5tO4uCpPXTJeaST_cheI8z-zYr7VvXULj8UoIF2VnvBrP8MGiooIbT_Hp0mh5ILFK8Jf8XP-7ApqiP0Lg6Jw7dmYLZS6FJ72NpiW3bOk8aqfDOkQHhfMUTsMv9H2W0duMyPiWQEAQFJNNxUU4gCtfI5MfwOAh_UA2Q/s256/386809492_255811943955703_6900124546687008175_n.png','Alpha TV':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcbvNEkATEeeNlikllpM5zgCaxZdysXyUvTedqJ-X_qYWwKb5up0qOrtvYe2Brrv98JEL0Tlg9lab2rMx7RRRapy1RPJsRxI8kaPSUg771YiwY9sPwfwbFr82VPmo9OR2cPuinFF6dGTNsM7RLzTtpgLP02mtx_TGoPwA5dCn4A1-Gg4ZcPNElVr_ocOE/s256/IMG-20260914-WA0017-removebg-preview__1_-removebg-preview.png','Clan':'','El Reino Infantil':'https://www.appcreator24.com/srv/imgs/seccs/38846461_ico.png','Primired':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjlhiVD_qOAEfM3RGvtDMIeEyNEIwgYQ7PFXPlClFn05Ktw5weRgxuglPYBaRAlBlzrFhn9F-QzQDHCnl8ayXr48sHK9qSA7Wqld_aj_K6vahNPl0-dbbfWZslHO6LkiP44Gj9H_09qlcMzviq83uf9oYMSgD80cZCgGuQMyru2G8XScWzo5GW3A-Suzio/s256/526f5dca-5ebd-4c8e-9754-008d09ba82f0_removalai_preview.png','Laika Channel':'','Magic Kids':'','Retromágico':'','Delmi TV':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgRrpdAg3XUCk5qgSaaqEw9j90lthelbH5LoIG_GhDb1W8eu2zXCWvPi-ddmMS8blbffzJNBvMLpu5Kgk87vUxmXTfAQouLBo8pC2l8i7v2dQfIB4sEf8lxdUgo0yKVi5iQBvWhAJGwW6cUQ4eRLiGNhQQO85Hecn17gL-cY68ihCQpLEOD0tbSJjLVuek/s256/Delmi%20TV%20%282%29.png','Delmi Channel':'','Star':'','Romance Channel':'','Teleclásica':'','Cindie TV':'','Novelísima':'','El Folklórico TV':'','Wox TV':'','Music 21':'','Maranatha':'','Ciudad Magazine':'','Unife':'','Argentinísima Satelital':'','UCL Televisión':''};
+C.forEach(function(c){if(c[0].indexOf('LPF Play')===0)D[c[0]]='ligaprofesional.ar';if(!c[3]&&L[c[0]])c[3]=L[c[0]];if(!c[3]&&D[c[0]]){c[3]=G+D[c[0]];c[4]=1}});
 
 var P='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
 I={rew:'<path d="M1 4v6h6M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/>',fwd:'<path d="M23 4v6h-6M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/>',sig:'<path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 12v8"/>',srch:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',back:'<path d="M19 12H5M12 19l-7-7 7-7"/>',prev:'<path d="M19 20 9 12l10-8zM5 19V5"/>',next:'<path d="M5 4l10 8-10 8zM19 5v14"/>',pause:'<path d="M7 4v16M17 4v16"/>',play:'<path d="M6 4l14 8-14 8z"/>',vol:'<path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',mute:'<path d="M11 5 6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6"/>',cast:'<path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6M2 12a9 9 0 0 1 8 8M2 16a5 5 0 0 1 4 4M2 20h.01"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',full:'<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>'};

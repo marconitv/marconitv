@@ -91,6 +91,49 @@ input[type=range]{width:80px;accent-color:var(--a)}
 <div class="chips" id="chips"></div><main id="rows"></main>
 <footer>© Marconi TV · Señal en vivo, sujeta a disponibilidad de cada emisora.</footer>
 
+   <!-- =====================================================================
+         MODAL: AGREGAR CANAL (HTTP SIN SSL Y HTTPS CON SSL)
+         ===================================================================== -->
+<!-- ... existing code ... -->
+            <form id="customChannelForm" onsubmit="handleSaveChannel(event)" class="p-4 space-y-4">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">N° Canal</label>
+                        <input id="fieldNumber" type="text" placeholder="Ej: 50" tabindex="0" class="w-full bg-[#05070a] border border-[#334155] text-white text-sm font-mono px-3 py-2">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Nombre del Canal *</label>
+                        <input id="fieldName" type="text" required placeholder="Ej: Canal Local HTTP" tabindex="0" class="w-full bg-[#05070a] border border-[#334155] text-white text-sm px-3 py-2">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-[11px] font-bold text-slate-300 uppercase">URL del Stream (HTTP / HTTPS) *</label>
+                        <span id="fieldProtocolTag" class="text-[10px] font-mono font-bold px-2 py-0.5 bg-[#1e293b] text-slate-300">
+                            HTTP / HTTPS
+                        </span>
+                    </div>
+                    <input id="fieldUrl" type="text" required oninput="previewUrlProtocol(this.value)" placeholder="http://servidor:puerto/live.m3u8 o https://..." tabindex="0" class="w-full bg-[#05070a] border border-[#334155] text-white text-xs font-mono px-3 py-2.5">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Logo URL (Opcional)</label>
+                    <input id="fieldLogo" type="text" placeholder="https://.../logo.png" tabindex="0" class="w-full bg-[#05070a] border border-[#334155] text-white text-xs px-3 py-2.5">
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#1e293b]">
+                    <button type="button" onclick="closeAddChannelModal()" tabindex="0" class="bg-[#1e293b] text-slate-300 px-4 py-2 text-xs font-bold uppercase">
+                        Cancelar
+                    </button>
+                    <button type="submit" tabindex="0" class="bg-[#00e5ff] text-[#05070a] font-cable px-5 py-2 text-xs uppercase">
+                        Guardar Canal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 <div class="pl" id="pl"><video id="v" playsinline webkit-playsinline crossorigin="anonymous" preload="auto"></video><div id="yt" style="display:none;position:absolute;inset:0"></div>
 <div class="st on" id="ld"><span class="rot"></span>Cargando señal…</div>
 <div class="st" id="er">Canal no disponible. Probá con otro.</div>

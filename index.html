@@ -104,7 +104,7 @@
                <!-- Indicador de transmisión activa -->
                <div id="castStatusBadge" class="hidden items-center gap-2 bg-blue-600/90 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
                    <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                   <span id="castDeviceName">Transmitiendo en TV</span>
+                   <span id="castDeviceName">En ambos dispositivos</span>
                </div>
            </div>
        </div>
@@ -133,9 +133,9 @@
                <!-- Botones derechos: Cast + Fullscreen -->
                <div class="flex items-center gap-3">
                    <!-- Botón Oficial de Cast -->
-                   <button id="castBtn" onclick="triggerCast()" title="Transmitir a TV (Samsung / LG / Chromecast)"
+                   <button id="castBtn" onclick="triggerCast()" title="Transmitir en ambos dispositivos (TV + Aquí)"
                            class="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white p-3 md:px-5 md:py-3 rounded-full font-bold text-sm transition-all active:scale-95">
-                       <!-- Icono SVG Oficial de Google Cast / Smart TV -->
+                       <!-- Icono SVG Oficial de Google Cast -->
                        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                            <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
                        </svg>
@@ -163,7 +163,7 @@
                         <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
                     </svg>
                 </div>
-                <h3 class="font-black text-lg uppercase">Conectar a Smart TV</h3>
+                <h3 class="font-black text-lg uppercase">Reproducir en Ambos (TV + Aquí)</h3>
             </div>
             <button onclick="closeTvModal()" class="text-zinc-400 hover:text-white p-1">
                 <i data-lucide="x" class="w-5 h-5"></i>
@@ -171,20 +171,19 @@
         </div>
 
         <div class="space-y-3 text-sm text-zinc-300">
-            <p class="text-zinc-400">Tu navegador no detectó un dispositivo Chromecast automático. Para ver en <strong>Samsung (Tizen)</strong> o <strong>LG (webOS)</strong>:</p>
+            <p class="text-zinc-400">El reproductor local permanece activo para que se vea en este dispositivo y en tu <strong>Samsung (Tizen)</strong> o <strong>LG (webOS)</strong> a la vez:</p>
             
             <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-1">
                 <p class="font-bold text-white flex items-center gap-2">
-                    <span class="text-blue-500">1.</span> Samsung Smart View / LG Screen Share
+                    <span class="text-blue-500">1.</span> Duplicar pantalla / pestaña (Recomendado para ver en ambos)
                 </p>
-                <p class="text-xs text-zinc-400">Desliza el panel superior de tu celular y activa <strong>Smart View</strong> (Samsung) o <strong>Emitir / Screen Share</strong> (LG), luego pon el video en pantalla completa.</p>
+                <p class="text-xs text-zinc-400">En PC (Chrome/Edge): usa <strong>Transmitir > Transmitir pestaña</strong>. En celular: usa <strong>Smart View</strong> (Samsung) o <strong>Screen Share</strong> (LG).</p>
             </div>
 
             <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-1">
                 <p class="font-bold text-white flex items-center gap-2">
-                    <span class="text-blue-500">2.</span> Navegador de la TV o App IPTV
+                    <span class="text-blue-500">2.</span> Enlace directo para app/reproductor en la TV
                 </p>
-                <p class="text-xs text-zinc-400">Abre esta misma página desde el navegador web de tu televisor Samsung o LG, o copia el enlace directo del canal:</p>
                 <div class="flex items-center gap-2 pt-2">
                     <input id="streamUrlCopy" type="text" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-300 font-mono">
                     <button onclick="copyStreamUrl()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">
@@ -195,7 +194,7 @@
         </div>
 
         <button onclick="closeTvModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
-            Entendido
+            Listo
         </button>
     </div>
 </div>
@@ -210,9 +209,21 @@
    let hls = new Hls();
    let currentChannel = null;
    let castSession = null;
+   let keepLocalPlaying = true; // Mantener reproducción local activa al transmitir
+
+   // Evita que el reproductor local se pause automáticamente al conectar Cast o Remote Playback
+   video.addEventListener('pause', () => {
+       if (keepLocalPlaying && (castSession || ('remote' in video && video.remote.state === 'connected'))) {
+           setTimeout(() => {
+               if (video.paused && keepLocalPlaying) {
+                   video.play().catch(() => {});
+               }
+           }, 250);
+       }
+   });
 
    // ==========================================
-   // INICIALIZACIÓN GOOGLE CAST SDK (Chromecast / Android TV / TVs compatibles)
+   // INICIALIZACIÓN GOOGLE CAST SDK
    // ==========================================
    window['__onGCastApiAvailable'] = function(isAvailable) {
        if (isAvailable) {
@@ -253,7 +264,12 @@
 
        const request = new chrome.cast.media.LoadRequest(mediaInfo);
        castSession.loadMedia(request).then(
-           () => { video.pause(); },
+           () => {
+               // Reanuda el video local para reproducción simultánea en ambos dispositivos
+               if (keepLocalPlaying && video.paused) {
+                   video.play().catch(() => {});
+               }
+           },
            (errorCode) => { console.error('Error enviando stream a Cast:', errorCode); }
        );
    }
@@ -267,7 +283,7 @@
            btn.classList.add('casting-active');
            badge.classList.remove('hidden');
            badge.classList.add('flex');
-           nameEl.innerText = `En vivo en ${deviceName}`;
+           nameEl.innerText = `En ambos: Aquí + ${deviceName}`;
        } else {
            btn.classList.remove('casting-active');
            badge.classList.add('hidden');
@@ -284,33 +300,40 @@
            return;
        }
 
-       // 1. Intentar Google Cast SDK (Chrome / Android / Chromecast / TVs con Cast integrado)
+       // Asegura que el reproductor local esté reproduciendo antes de enviar a la TV
+       if (video.paused) {
+           video.play().catch(() => {});
+       }
+
+       // 1. Intentar Google Cast SDK
        if (window.cast && cast.framework) {
            try {
                await cast.framework.CastContext.getInstance().requestSession();
+               if (keepLocalPlaying && video.paused) video.play().catch(() => {});
                return;
            } catch (err) {
-               if (err === 'cancel') return; // El usuario cerró el selector
+               if (err === 'cancel') return;
            }
        }
 
-       // 2. Intentar Remote Playback API (Chrome/Edge móvil y escritorio hacia Smart TVs DLNA/DIAL/Miracast)
+       // 2. Intentar Remote Playback API (Chrome/Edge hacia Smart TVs)
        if ('remote' in video) {
            try {
                await video.remote.prompt();
+               if (keepLocalPlaying && video.paused) video.play().catch(() => {});
                return;
            } catch (err) {
                console.log("Remote Playback no disponible o cancelado:", err);
            }
        }
 
-       // 3. Intentar AirPlay (Safari / iOS hacia Samsung y LG compatibles con AirPlay 2)
+       // 3. Intentar AirPlay (Safari / iOS hacia Samsung y LG compatibles)
        if (window.WebKitPlaybackTargetAvailabilityEvent && video.webkitShowPlaybackTargetPicker) {
            video.webkitShowPlaybackTargetPicker();
            return;
        }
 
-       // 4. Fallback inteligente: Mostrar guía para Samsung Smart View / LG Screen Share / Enlace directo
+       // 4. Fallback inteligente con guía para reproducir en ambos dispositivos
        document.getElementById('streamUrlCopy').value = currentChannel.url;
        const modal = document.getElementById('tvModal');
        modal.classList.remove('hidden');
@@ -365,10 +388,9 @@
        document.getElementById('currentLogo').src = ch.logo;
        document.getElementById('currentLogo').style.display = 'block';
 
-       // Si ya hay una sesión de Cast activa, enviar el nuevo canal directamente a la TV
+       // Enviar a Cast si hay sesión activa, pero SIN omitir la reproducción local
        if (castSession) {
            loadMediaOnCast(ch);
-           return;
        }
 
        document.getElementById('loader').classList.remove('hidden');
@@ -412,9 +434,11 @@
 
    function togglePlay() {
        if (video.paused) { 
+           keepLocalPlaying = true;
            video.play();
            updateIcons('pause'); 
        } else { 
+           keepLocalPlaying = false;
            video.pause(); 
            updateIcons('play');
        }
@@ -429,9 +453,11 @@
        video.volume = v; 
    }
 
-   // Escuchar cambios de estado en Remote Playback (Samsung/LG vía Chrome)
    if ('remote' in video) {
-       video.remote.addEventListener('connect', () => updateCastUI(true, "Smart TV"));
+       video.remote.addEventListener('connect', () => {
+           updateCastUI(true, "Smart TV");
+           if (keepLocalPlaying && video.paused) video.play().catch(() => {});
+       });
        video.remote.addEventListener('disconnect', () => updateCastUI(false));
    }
 

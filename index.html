@@ -77,7 +77,7 @@
                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20">
                    <i data-lucide="tv-2" class="text-white w-5 h-5"></i>
                </div>
-               <h1 class="text-xl font-black tracking-tighter italic uppercase">LAGUNA PAIVA <span class="text-blue-500">IPTV</span></h1>
+               <h1 class="text-xl font-black tracking-tighter italic uppercase">MARCONI <span class="text-blue-500">TV</span></h1>
            </div>
           
            <div class="relative">
@@ -201,9 +201,9 @@
 
 <script>
    const channels = [
-       { name: "VEO SANTA FE", url: "https://live-01-01-tn.vodgc.net/TN_DAI_Beta/index.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345346/amrez8xvti7qszmwoorl.png", cat: "Local" },
+       { name: "VEO SANTA FE", url: "https://joy.nx-pc.edge-apps.net/hls/96blm-4g2p9-jim16-3b26n.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345346/amrez8xvti7qszmwoorl.png", cat: "Local" },
        { name: "CANAL 4 SANTA MARÍA", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a0e1/index.m3u8?token=miguel2026", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfAWtwo7AZuwm4NenJo74BhVyeZQ9r41k2jkkK4KbC0A&s=10", cat: "Local" },
-              { name: "TN", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a097/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345069/wy5gze1xto6u7pzndpo4.png", cat: "Noticias" },
+         { name: "TN", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a097/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345069/wy5gze1xto6u7pzndpo4.png", cat: "Noticias" },
        { name: "A24", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05u/index.m3u8?token=miguel2026", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimYrXNJ8wtHpCyox7GiJ6faZvu90lN2SIu4I7jRydBWhGNtB0tzcr-D_CYcguDhyaXeBATHiTwLnxqfJqkkpW_WToWM5Th5zZkZgH65Av8hMotJlQdgDt8oqFATtd-Q_WHdSNn3fHXopjsMxAwPMbLriQ8ohruqqnEYn1OkjBpQwhCTYF-poHCUFpXOqg/s256/476486082_932714035510907_2159466137061706592_n.png", cat: "Noticias" },
        { name: "C5N", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05v/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343205/svtomvm729gbibz9ofsq.png", cat: "Noticias" },
        { name: "LN+", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05y/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344457/fcjc3stfsqmhfiwhg3gl.png", cat: "Noticias" },
@@ -372,7 +372,7 @@
        mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
        mediaInfo.metadata.metadataType = chrome.cast.media.MetadataType.GENERIC;
        mediaInfo.metadata.title = ch.name;
-       mediaInfo.metadata.subtitle = "Laguna Paiva IPTV - " + ch.cat;
+       mediaInfo.metadata.subtitle = "MARCONI TV - " + ch.cat;
        if (ch.logo) {
            mediaInfo.metadata.images = [{ url: ch.logo }];
        }

@@ -1,591 +1,360 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>MARCONI TV</title>
-   <script src="https://cdn.tailwindcss.com"></script>
-   <script src="https://unpkg.com/lucide@latest"></script>
-   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-   <!-- SDK Oficial de Google Cast -->
-   <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-   <style>
-       @import url('https://fonts.googleapis.com/css2?family=Onest:wght@300;400;700;900&display=swap');
-      
-       body {
-           font-family: 'Onest', sans-serif;
-           background-color: #050505;
-           color: white;
-           margin: 0;
-           overflow: hidden;
-           height: 100vh;
-       }
-       /* Layout Base */
-       .grid-container {
-           display: grid;
-           grid-template-areas: "nav main";
-           grid-template-columns: 350px 1fr;
-           height: 100vh;
-       }
-       /* Ajustes para Celulares (Pantalla vertical) */
-       @media (max-width: 1024px) {
-           .grid-container {
-               grid-template-areas:
-                   "main"
-                   "nav";
-               grid-template-columns: 1fr;
-               grid-template-rows: 35vh 65vh;
-           }
-       }
-       /* Forzar Landscape en Fullscreen */
-       #player-section:fullscreen {
-           width: 100vw;
-           height: 100vh;
-           background: black;
-       }
-       #sidebar { grid-area: nav; }
-       #player-section { grid-area: main; }
-       .custom-scroll::-webkit-scrollbar { width: 6px; }
-       .custom-scroll::-webkit-scrollbar-track { background: #0a0a0a; }
-       .custom-scroll::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
-       .active-channel {
-           background: linear-gradient(90deg, #1e3a8a 0%, #09090b 100%) !important;
-           border-left: 4px solid #3b82f6 !important;
-       }
-       .video-gradient-top {
-           background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
-       }
-       .video-gradient-bottom {
-           background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
-       }
-       video { outline: none; object-fit: contain; }
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marconi TV · Televisión en vivo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.35.6/es6-shim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/3.6.2/fetch.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+<script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+<style>
+:root{--bg:#0b0b0e;--p:#121218;--l:#22222c;--a:#ff2a4b;--m:#9494a3}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:#fff;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select{font:inherit;color:inherit;outline:none}
+svg{width:100%;height:100%}
+nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:12px 4%;background:#0b0b0ee6;backdrop-filter:blur(8px);border-bottom:1px solid var(--l)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px}
+.logo i{width:24px;height:24px;color:var(--a)}
+.logo b{background:var(--a);padding:1px 7px;border-radius:5px;font-size:15px}
+.sp{flex:1}
+.clk{font-size:12px;font-weight:700;color:#d1d1d6;background:var(--p);border:1px solid var(--l);padding:6px 12px;border-radius:20px;white-space:nowrap}
+.sb{display:flex;align-items:center;gap:8px;background:var(--p);border:1px solid var(--l);border-radius:20px;padding:6px 12px;width:240px}
+.sb i{width:16px;height:16px;color:var(--m);flex:none}
+.sb input{background:none;border:0;width:100%;font-size:13px}
+.hero{padding:10vh 4% 7vh;background:repeating-radial-gradient(circle at 88% 0,transparent 0 46px,#ff2a4b26 47px 48px),linear-gradient(#14141c,var(--bg))}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--a)}
+.live i,.lv i{width:7px;height:7px;border-radius:50%;background:var(--a);box-shadow:0 0 8px var(--a);animation:pd 1.5s infinite}
+@keyframes pd{50%{transform:scale(1.4)}}
+h1{font-size:clamp(30px,5.5vw,56px);line-height:1.08;margin:12px 0;font-weight:800;max-width:640px}
+.hero p{color:var(--m);max-width:480px;margin-bottom:24px;line-height:1.5}
+.btn{background:var(--a);border:0;padding:12px 24px;border-radius:24px;font-weight:700;cursor:pointer;margin-right:8px}
+.btn.g{background:#ffffff22}
+.btn:hover,.btn:focus{box-shadow:0 0 0 2px #fff}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:18px 4% 8px;scrollbar-width:none}
+.chip{flex:none;background:var(--p);border:1px solid var(--l);padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;color:#d1d1d6}
+.chip.on,.chip:hover,.chip:focus{background:var(--a);border-color:var(--a);color:#fff}
+section{padding:10px 4% 6px}
+h2{font-size:17px;margin-bottom:10px}
+.row{display:flex;gap:12px;overflow-x:auto;padding:6px 4px 14px}
+.card{flex:none;width:210px;height:118px;border-radius:10px;position:relative;cursor:pointer;border:1px solid var(--l);overflow:hidden;transition:transform .2s}
+.card:hover,.card:focus{transform:scale(1.06);border-color:var(--a);box-shadow:0 0 0 2px #fff}
+.ini{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:800}
+.nm{position:absolute;left:0;right:0;bottom:0;padding:20px 10px 8px;background:linear-gradient(transparent,#000c);font-size:13px;font-weight:600}
+.lv{position:absolute;top:8px;left:8px;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;background:#000a;padding:2px 7px;border-radius:10px}
+.lv i{width:6px;height:6px}
+.empty,footer{text-align:center;color:var(--m);font-size:13px;padding:40px}
+.pl{position:fixed;inset:0;z-index:50;background:#000;display:none}
+.pl.on{display:block}
+video{width:100%;height:100%;object-fit:contain}
+.hud{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;transition:opacity .3s}
+.pl.h .hud{opacity:0;cursor:none}
+.top,.bot{display:flex;align-items:center;gap:12px;padding:16px 4%}
+.top{background:linear-gradient(#000d,transparent)}
+.bot{background:linear-gradient(transparent,#000e);justify-content:space-between;flex-wrap:wrap}
+.cg{display:flex;align-items:center;gap:8px}
+.ib{width:38px;height:38px;flex:none;border-radius:50%;border:0;background:#ffffff26;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:10px}
+.ib:hover,.ib:focus{background:var(--a);box-shadow:0 0 0 2px #fff}
+.ib.pr{background:var(--a);width:46px;height:46px}
+.ttl{font-weight:700;font-size:15px}
+.ttl small{display:block;color:var(--m);font-weight:500;font-size:11px}
+select{background:#ffffff26;border:0;padding:8px 10px;border-radius:8px;font-size:12px}
+option{background:var(--p)}
+input[type=range]{width:80px;accent-color:var(--a)}
+.st{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0ee6;border:1px solid #fff3;padding:12px 24px;border-radius:30px;font-size:13px;font-weight:700;display:none;align-items:center;gap:10px}
+.st.on{display:flex}
+#er{border-color:var(--a);color:var(--a)}
+.rot{width:16px;height:16px;border:2px solid #fff4;border-top-color:#fff;border-radius:50%;animation:rt 1s linear infinite}
+@keyframes rt{to{transform:rotate(360deg)}}
+.dr{position:absolute;top:0;right:0;bottom:0;width:280px;background:var(--p);border-left:1px solid var(--l);transform:translateX(100%);transition:transform .25s;overflow-y:auto;z-index:5;padding:8px}
+.dr.on{transform:none}
+.di{padding:10px 12px;border-radius:6px;font-size:13px;cursor:pointer}
+.di:hover,.di.a{background:#ff2a4b40}
+.sk{flex-basis:100%;display:flex;align-items:center;gap:10px}
+.sk input[type=range]{display:block;flex:1;width:auto}
+.sk span{font-size:11px;font-weight:600;color:#d1d1d6;min-width:90px;text-align:right}
+#yt iframe{width:100%;height:100%;border:0}
+.pg{width:28px;height:28px;padding:3px;background:#fff;object-fit:contain;border-radius:6px}
+.lg{position:absolute;top:14px;left:50%;margin-left:-32px;width:64px;height:64px;padding:8px;background:#fff;border-radius:14px;object-fit:contain}
+.cm{position:absolute;bottom:110px;right:4%;width:240px;background:#181822;border:1px solid #333342;border-radius:8px;padding:12px;z-index:6;display:none}
+.cm.on{display:block}
+.cm h5{font-size:12px;margin-bottom:8px;color:#aaa;text-transform:uppercase}
+.cd{padding:8px 10px;background:#ffffff0d;border-radius:6px;cursor:pointer;font-size:12px;margin-bottom:4px}
+.cd:hover{background:var(--a)}
+@media(max-width:640px){.sb{width:100%}.nav .clk,nav .clk{display:none}.card{width:160px;height:90px}input[type=range]{display:none}}
+</style></head><body>
+<nav><div class="logo"><i data-ic="sig"></i>MARCONI<b>TV</b></div><div class="sp"></div>
+<label class="sb"><i data-ic="srch"></i><input id="sq" placeholder="Buscar canal" autocomplete="off"></label><div class="clk"></div></nav>
+<header class="hero"><span class="live"><i></i>En vivo ahora</span>
+<h1>mirá la televisión online, donde quieras verla.</h1>
+<p><span id="cnt"></span> canales en vivo: aire, deportes, noticias, infantiles y más. Sin registro, en cualquier pantalla.</p>
+<button class="btn" id="hp">Abrir reproductor</button><button class="btn g" id="hs">Explorar canales</button></header>
+<div class="chips" id="chips"></div><main id="rows"></main>
+<footer>© 2026 Marconi TV · Señal en vivo, sujeta a disponibilidad de cada emisora.</footer>
 
-       /* Animación cuando está transmitiendo */
-       .casting-active {
-           background-color: #2563eb !important;
-           color: #ffffff !important;
-           box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
-       }
-   </style>
-</head>
-<body>
-<div class="grid-container">
-  
-   <aside id="sidebar" class="bg-zinc-950 border-r border-zinc-800 flex flex-col overflow-hidden">
-       <div class="p-5 space-y-4">
-           <div class="flex items-center gap-3">
-               <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-900/20">
-                   <i data-lucide="tv-2" class="text-white w-5 h-5"></i>
-               </div>
-               <h1 class="text-xl font-black tracking-tighter italic uppercase">MARCONI <span class="text-blue-500">TV</span></h1>
-           </div>
-          
-           <div class="relative">
-               <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-zinc-500"></i>
-               <input id="searchInput" type="text" placeholder="Buscar entre canales..."
-                      class="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-           </div>
-       </div>
-       <div id="channelList" class="flex-1 overflow-y-auto custom-scroll px-3 pb-10 space-y-1">
-       </div>
-   </aside>
-
-   <main id="player-section" class="relative group bg-black flex flex-col overflow-hidden">
-       <!-- Header superior del reproductor -->
-       <div class="absolute top-0 left-0 w-full z-20 p-6 md:p-10 video-gradient-top opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-           <div class="flex items-center justify-between">
-               <div class="flex items-center gap-4 md:gap-6">
-                   <img id="currentLogo" src="" class="w-12 h-12 md:w-20 md:h-20 object-contain bg-white rounded-lg p-1.5 shadow-2xl" onerror="this.style.display='none'">
-                   <div>
-                       <span id="currentCat" class="text-blue-500 font-bold text-[10px] md:text-xs uppercase tracking-[0.2em]">SINTONIZANDO</span>
-                       <h2 id="playerTitle" class="text-2xl md:text-5xl font-black uppercase leading-tight">Selecciona un canal</h2>
-                   </div>
-               </div>
-               <!-- Indicador de transmisión activa -->
-               <div id="castStatusBadge" class="hidden items-center gap-2 bg-blue-600/90 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
-                   <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                   <span id="castDeviceName">En ambos dispositivos</span>
-               </div>
-           </div>
-       </div>
-
-       <!-- Video -->
-       <div class="flex-1 relative flex items-center justify-center bg-zinc-950">
-           <video id="mainVideo" class="w-full h-full max-h-screen" playsinline crossorigin="anonymous" x-webkit-airplay="allow"></video>
-           <div id="loader" class="absolute inset-0 flex items-center justify-center bg-black/50 z-10 hidden">
-               <div class="animate-spin rounded-full h-14 w-14 border-4 border-blue-600 border-t-transparent"></div>
-           </div>
-       </div>
-
-       <!-- Controles inferiores -->
-       <div class="absolute bottom-0 left-0 w-full z-20 p-6 md:p-8 video-gradient-bottom opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-           <div class="flex items-center justify-between gap-4">
-               <div class="flex items-center gap-4 md:gap-6">
-                   <button onclick="togglePlay()" class="hover:scale-110 active:scale-95 transition-all bg-white/10 p-3 rounded-full backdrop-blur-md">
-                       <i id="playBtn" data-lucide="play" class="w-6 h-6 md:w-8 md:h-8 fill-white text-white"></i>
-                   </button>
-                   <div class="hidden sm:flex items-center gap-3 bg-white/5 p-2 px-4 rounded-2xl border border-white/10">
-                       <i data-lucide="volume-2" class="w-4 h-4 text-zinc-400"></i>
-                       <input type="range" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)" class="w-20 md:w-32 accent-blue-500 cursor-pointer">
-                   </div>
-               </div>
-
-               <!-- Botones derechos: Cast + Fullscreen -->
-               <div class="flex items-center gap-3">
-                   <!-- Botón Oficial de Cast -->
-                   <button id="castBtn" onclick="triggerCast()" title="Transmitir en ambos dispositivos (TV + Aquí)"
-                           class="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white p-3 md:px-5 md:py-3 rounded-full font-bold text-sm transition-all active:scale-95">
-                       <!-- Icono SVG Oficial de Google Cast -->
-                       <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                           <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
-                       </svg>
-                       <span class="hidden lg:inline">TRANSMITIR</span>
-                   </button>
-
-                   <!-- Botón Pantalla Completa -->
-                   <button onclick="handleFullscreen()" class="flex items-center gap-2 bg-blue-600 text-white px-5 md:px-8 py-3 rounded-full font-black text-sm md:text-base hover:bg-blue-500 transition-all shadow-xl active:translate-y-1">
-                       <i data-lucide="maximize" class="w-5 h-5"></i>
-                       <span class="hidden md:inline">PANTALLA COMPLETA</span>
-                   </button>
-               </div>
-           </div>
-       </div>
-   </main>
-</div>
-
-<!-- Modal de Compatibilidad Samsung / LG / Smart TV -->
-<div id="tvModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
-        <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600/20 text-blue-400 p-2 rounded-lg">
-                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                        <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
-                    </svg>
-                </div>
-                <h3 class="font-black text-lg uppercase">Reproducir en Ambos (TV + Aquí)</h3>
-            </div>
-            <button onclick="closeTvModal()" class="text-zinc-400 hover:text-white p-1">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-        </div>
-
-        <div class="space-y-3 text-sm text-zinc-300">
-            <p class="text-zinc-400">El reproductor local permanece activo para que se vea en este dispositivo y en tu <strong>Samsung (Tizen)</strong> o <strong>LG (webOS)</strong> a la vez:</p>
-            
-            <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-1">
-                <p class="font-bold text-white flex items-center gap-2">
-                    <span class="text-blue-500">1.</span> Duplicar pantalla / pestaña (Recomendado para ver en ambos)
-                </p>
-                <p class="text-xs text-zinc-400">En PC (Chrome/Edge): usa <strong>Transmitir > Transmitir pestaña</strong>. En celular: usa <strong>Smart View</strong> (Samsung) o <strong>Screen Share</strong> (LG).</p>
-            </div>
-
-            <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800 space-y-1">
-                <p class="font-bold text-white flex items-center gap-2">
-                    <span class="text-blue-500">2.</span> Enlace directo para app/reproductor en la TV
-                </p>
-                <div class="flex items-center gap-2 pt-2">
-                    <input id="streamUrlCopy" type="text" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-300 font-mono">
-                    <button onclick="copyStreamUrl()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">
-                        Copiar
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <button onclick="closeTvModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
-            Listo
-        </button>
-    </div>
-</div>
+<div class="pl" id="pl"><video id="v" playsinline webkit-playsinline crossorigin="anonymous" preload="auto"></video><div id="yt" style="display:none;position:absolute;inset:0"></div>
+<div class="st on" id="ld"><span class="rot"></span>Cargando señal…</div>
+<div class="st" id="er">Canal no disponible. Probá con otro.</div>
+<div class="st" id="ct">Transmitiendo a la TV</div>
+<div class="cm" id="cm"><h5>Dispositivos Chromecast</h5><div class="cd" id="cd">Televisión de la Sala (Cast)</div><div class="cd" style="color:#888;cursor:default">Buscando más dispositivos...</div></div>
+<div class="hud"><div class="top"><button class="ib" id="bk" data-ic="back" title="Volver"></button>
+<img id="pg" class="pg" alt="" style="display:none"><div class="ttl"><span id="pn"></span><small id="pc"></small></div><span class="live"><i></i>En vivo</span><div class="sp"></div><div class="clk"></div></div>
+<div class="bot"><div class="sk"><input type="range" id="sk" min="0" max="100" step="0.1" value="0" title="Línea de reproducción"><span id="td">00:00 / En vivo</span></div><div class="cg"><button class="ib" id="pv" data-ic="prev" title="Canal anterior"></button><button class="ib" id="rw" data-ic="rew" title="Retroceder 10s"></button><button class="ib pr" id="pp" data-ic="pause" title="Play / Pausa"></button><button class="ib" id="fw" data-ic="fwd" title="Avanzar 10s"></button><button class="ib" id="nx" data-ic="next" title="Canal siguiente"></button></div>
+<div class="cg"><button class="ib" id="mu" data-ic="vol" title="Silenciar"></button><input type="range" id="vs" min="0" max="100" value="100">
+<select id="q"><option value="-1">Auto</option></select>
+<button class="ib" id="cb" data-ic="cast" title="Transmitir"></button><button class="ib" id="db" data-ic="list" title="Canales"></button><button class="ib" id="fs" data-ic="full" title="Pantalla completa"></button></div></div></div>
+<div class="dr" id="dr"></div></div>
 
 <script>
-   const channels = [
-         { name: "TN", url: "https://live-01-01-tn.vodgc.net/TN_DAI_Beta/index.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345069/wy5gze1xto6u7pzndpo4.png", cat: "Noticias" },
-       { name: "A24", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05u/index.m3u8?token=miguel2026", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEimYrXNJ8wtHpCyox7GiJ6faZvu90lN2SIu4I7jRydBWhGNtB0tzcr-D_CYcguDhyaXeBATHiTwLnxqfJqkkpW_WToWM5Th5zZkZgH65Av8hMotJlQdgDt8oqFATtd-Q_WHdSNn3fHXopjsMxAwPMbLriQ8ohruqqnEYn1OkjBpQwhCTYF-poHCUFpXOqg/s256/476486082_932714035510907_2159466137061706592_n.png", cat: "Noticias" },
-       { name: "C5N", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05v/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343205/svtomvm729gbibz9ofsq.png", cat: "Noticias" },
-       { name: "LN+", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05y/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344457/fcjc3stfsqmhfiwhg3gl.png", cat: "Noticias" },
-{ name: "METRO", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a06l/index.m3u8?token=miguel2026", logo: "https://www.appcreator24.com/srv/imgs/seccs/36940858_ico.png", cat: "VARIEDADES" },
-       { name: "CRONICA TV", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05w/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343495/lfiirtos0kntrahjmmro.png", cat: "Noticias" },
-       { name: "CANAL 26", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a05x/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343427/vhidvtxodaxhsijzvbok.png", cat: "Noticias" },
-       { name: "AR/12", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a0dz/index.m3u8?token=miguel2026", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiKOMDeOVOusk6uLLUgkWP3rsUmxqJQWWnxdTLVom0n5roDk6uiJzG__g6f5tcpq1FiO3N07j_AWfvkPs9feehAK0RQB12yt-3BKdQbSbJgp_AT9zd0OeVg7A-3lwKe2EE6tQiJb-5LkaKVsMoqOK1c2A5GKYo-mrgU6y8ZDI2ifWjt1a1cm4rb3l3N_7o/s2366/Ar12.png", cat: "Noticias" },
-       { name: "TELEFE", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://138.59.227.20:8000/play/a08a/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345039/k7wex8tz5j0sazltjb1n.png", cat: "Aire" },
-       { name: "EL TRECE", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a07b/index.m3u8?token=miguel2026", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEieRkwvqwODF5vpPjqMnxL9zC1gHW2ySpypwm3SNd3F05AIl-ewhLl2ke-NomsUFvZO1ZNJ18xUvxDlnzbagdz1j4C5POQKd2VYptP_B4O95jFRRqA_ATC2Y0aqEMncYSkKUEHe22bT5e9jbZlAqoxwB4BQrGiqpK7KhHYUS7RYrNK1Ta_KdnQg6JwsUq0/s228/Screenshot_2024-02-10_at_11-40-55_image.png__Imagen_PNG_240___240_pixels_-removebg-preview.png", cat: "Aire" },
-       { name: "AMERICA TV", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a094/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343193/yfswhrfentg6ldidmvkd.png", cat: "Aire" },
-       { name: "EL NUEVE", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a08k/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343409/r6vbn4n6dfsem4thbh7g.png", cat: "Aire" },
-       { name: "CANAL SIETE", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a0ec/index.m3u8?token=miguel2026", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjCQW_AtMAHTSYpZq0OL6p1cr5s25HOsi1ablWAe3vyQWZsHPLuy1gHBd7j3SLlBi63YwpezyzhdGZGUdrwpNi8qfUv0-42ASNO4sF80LaALQXk3WKoChg5QDRfEXFSLNPvyMjtoXiuPLKjI1vbA-swoNqMnLGmGlT1finAVEQxwhLQkWV3UuBWsp63VfU/s585/Screenshot_20261016-235042-removebg-preview.png", cat: "Aire" },
-       { name: "NET TV", url: "https://joy.nx-pc.edge-apps.net/hls/lb0ol-ailc9-5k80-j4fj6.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345761/lrd1rhajbdywgjzhslkb.png", cat: "Aire" },
-       { name: "URBANA PLAY", url: "https://joy.nx-pc.edge-apps.net/hls/3dn0g-j9clp-hngk7-ki23g.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1744903581/xawt97jb550pdq5sxu0y.png", cat: "Variedad" },
-       { name: "CIUDAD MAGAZINE", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a06m/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344483/ze80dpksdnhmtrrir0jy.png", cat: "Variedad" },
-       { name: "TYC SPORTS", url: "https://live-04-11-tyc-app-web.vodgc.net/tyc24/index.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345246/bkxx3r33ra53vmbwc1qp.png", cat: "Deportes" },
-       { name: "FOX SPORTS", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a085/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344065/kq9nkzim7pr4yk6cgjja.png", cat: "Deportes" },
-       { name: "FOX SPORTS 2", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a09b/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344086/ga6vdlikxfa3c8puixeq.png", cat: "Deportes" },
-       { name: "FOX SPORTS 3", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a06y/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344107/fdnnmnk6gnmfoggvvh8t.png", cat: "Deportes" },
-       { name: "ESPN", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a099/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343656/cxuieragbu4epuhxo7in.png", cat: "Deportes" },
-       { name: "ESPN 2", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a098/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343621/dvoznks55wyxhidxt5tz.png", cat: "Deportes" },
-       { name: "ESPN 3", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a09a/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343670/ypj5fzsecjbhs6itvldj.png", cat: "Deportes" },
-       { name: "ESPN 4", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a084/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1708005521/wazxwdf0tycbg0qc6jwt.png", cat: "Deportes" },
-       { name: "DSPORTS", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a0ef/index.m3u8?token=miguel2026", logo: "https://www.appcreator24.com/srv/imgs/seccs/38373623_ico.png", cat: "Deportes" },
-       { name: "DSPORTS 2", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a0ee/index.m3u8?token=miguel2026", logo: "https://www.appcreator24.com/srv/imgs/seccs/38373635_ico.png", cat: "Deportes" },
-       { name: "DEPORTV", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a07f/index.m3u8?token=miguel2026", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1749237097/ktodxvqmqpbo1lhl452v.png", cat: "Deportes" },
-{ name: "AMÉRICA SPORTS", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a061/index.m3u8?token=miguel2026", logo: "https://www.appcreator24.com/srv/imgs/seccs/36918920_ico.png", cat: "Deportes" },
-       { name: "TNT SPORTS PREMIUM", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a06z/index.m3u8?token=miguel2026", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhFGKqUAU9_m8xAypVgs44ZuoQCaMoaXAMvLHC0YRY_bD6LLYCTFXLw18eYTN1zV2TkR1P3E4mIPlyYus7nOEkk0ws29Gc2uyQj-X_0-qvWsxa5NAGE7lnCsJMThrgOoBdE930AxpzpXQyHfkr2M3oBvFUvKXvTt-Yo-5uBmbHUTzwKntbgwJhcTrF0nEs/s200/472970723_600071056130905_7686830705336578560_n.png", cat: "Premium" },
-       { name: "ESPN PREMIUM", url: "https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a086/index.m3u8?token=miguel2026", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifAvhv6KpqU-k2oz-q8WYx-4xxhQ-VFb-6v6uE5w9e9xGiLTVqfnvuj_VLFJfhnQU3G6oZrGNupI5rv9WRM-_GSsZpi9zdqIpT2ZHMx0BOP7lev64k0FSzLWOGV1mHY1VmsOXENBihGDWlbO6Jy52LfGALpDEDiLU0NhPZziVvowWf0RvIX0xluoF_M-k/s200/789-removebg-preview.png", cat: "Premium" },
-       { name: "DISNEY CHANNEL", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/disney_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343539/hbtoaryt4rspl7nuvo5f.png", cat: "Niños" },
-       { name: "DISNEY JR.", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/disneyjr_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343555/qquu2rgawhx5vewx5k5s.png", cat: "Niños" },
-       { name: "CARTOON NETWORK", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/cartoon_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343459/qeyq8c2njqjrpfvzwhmz.png", cat: "Niños" },
-       { name: "TOONCAST", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/tooncast_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345162/dr9opo1wgzz6rjqestvs.png", cat: "Niños" },
-       { name: "ZOO MOO", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/zoomoo_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345870/wz2y1iajjlrvbuajnsw9.png", cat: "Niños" },
-       { name: "PAKA PAKA", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/pkpk_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344683/o5wmeruzw6cwdozlkb64.png", cat: "Niños" },
-       { name: "BABY TV", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/babytv_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343332/k6apxdxseirljmuvoctg.png", cat: "Niños" },
-       { name: "CANAL INFANTIL", url: "https://joy.nx-pc.edge-apps.net/hls/d45pa-2lfp1-e8p5j-3k22i.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684348314/yvbj7oz3ujktnle6so2a.png", cat: "Niños" },
-       { name: "PLIM PLIM TV", url: "https://joy.nx-pc.edge-apps.net/hls/mb6hp-85n73-pedjc-o07ef.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1750353500/e02amybvvycqtiovtkxy.png", cat: "Niños" },
-       { name: "FX", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/fx_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1738861342/mxqccbweqij3th5jni3m.png", cat: "Cine" },
-       { name: "CINEMAX", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/cinemax_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344640/awvuauzeynupv9g4w55w.png", cat: "Cine" },
-       { name: "MULTIPREMIER", url: "https://joy.nx-pc.edge-apps.net/hls/k9bpa-nd884-2a06l-640e1.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346044/hzxoskqpdbco2grcfs1k.png", cat: "Cine" },
-       { name: "CINECANAL", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/cinecanal_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346192/wlqczqrkvqmrr4khdekf.png", cat: "Cine" },
-       { name: "TNT", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/yythzps63vn00000245fkb6ah5w93eyw_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345114/pe7pbo0c5bycumcxxcdf.png", cat: "Cine" },
-       { name: "EUROPA EUROPA", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/europa_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1738069963/jyv6t42pjooaxfefm25e.png", cat: "Cine" },
-       { name: "FILM & ARTS", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/filmsarts_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346138/os0793nnsdcby18gttcg.png", cat: "Cine" },
-       { name: "GOLDEN", url: "https://joy.nx-pc.edge-apps.net/hls/3ndhm-1aci9-g528l-oblaf.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345548/waykhtjrltosfh3wiqkl.png", cat: "Cine" },
-       { name: "AMC", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/amc_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344432/rpwhd2jsw6f45i468bew.png", cat: "Cine" },
-       { name: "STAR CHANNEL", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/foxhd_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343392/ta0eesxgcjxhxhikcxyo.png", cat: "Cine" },
-       { name: "WARNER CHANNEL", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/warner_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345322/xagr6s4ajzppkxqk9gna.png", cat: "Cine" },
-       { name: "TNT SERIES", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/ys5dsbmbhj0n00000246u0bv0ntrqybu_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345574/crvpq9vwaupct2wumr9l.png", cat: "Cine" },
-       { name: "TNT NOVELAS", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/t8xqrnk00000253cu7nwb24ejzgzxj9d_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1689266233/wyegs5ojarqf4qonqjp0.png", cat: "Novelas" },
-       { name: "SPACE", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/space_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344768/jr9kvm8tcjv7aiqblavz.png", cat: "Cine" },
-       { name: "VOLVER", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/volver_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345294/e2f2jre2m3ydeaevxczs.png", cat: "Cine" },
-       { name: "CINE.AR", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/cinear_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345516/udplad6zrky9yvhyhat5.png", cat: "Cine" },
-       { name: "TCM", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/tcm_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345600/btr9auc3hlqghyu7e7z0.png", cat: "Cine" },
-       { name: "STAR TVE", url: "https://joy.nx-pc.edge-apps.net/hls/k4jn-k8e9h-i267a-acckf.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346330/dugkog0m3cpan5ct2w2k.png", cat: "Cine" },
-       { name: "A3SERIES", url: "https://joy.nx-pc.edge-apps.net/hls/e2f1o-66f4a-9m7dn-aphj2.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1682169146/ztlcxgcuqiquwpljsfut.png", cat: "Novelas" },
-       { name: "A3CINE", url: "https://joy.nx-pc.edge-apps.net/hls/kpnai-5f8d4-1pmch-5h5oe.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1682169336/gwe0estuudnrotgm0a1t.png", cat: "Cine" },
-       { name: "LAS ESTRELLAS", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/cestrellas_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343712/x8gr1lfymel9mphjsilz.png", cat: "Novelas" },
-       { name: "RCN NOVELAS", url: "https://joy.nx-pc.edge-apps.net/hls/d89mh-phk3-5cmmm-343i3.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684348415/qg7endigoqpzeq4mgbvu.png", cat: "Novelas" },
-       { name: "PASIONES", url: "https://joy.nx-pc.edge-apps.net/hls/52eb-m1lik-hb373-d4bn1.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346766/k7fwhb1tfjjmzjwj0ydu.png", cat: "Novelas" },
-       { name: "NOVELISIMA", url: "https://joy.nx-pc.edge-apps.net/hls/jlg10-a783n-d578n-mo8ch.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1750785888/tbxfsnmbgjbsielt5job.png", cat: "Novelas" },
-       { name: "KANAL D DRAMA", url: "https://joy.nx-pc.edge-apps.net/hls/i37hj-60mnd-n2kjo-2bljm.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1720111155/uja0cmn8jgkhlnaj0ylf.png", cat: "Novelas" },
-       { name: "HBO", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hbo_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344148/ydjbqizsk5ivxmecww98.png", cat: "HBO Premium" },
-       { name: "HBO 2", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hbo2_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344172/ytykblekpiypt6ispkcf.png", cat: "HBO Premium" },
-       { name: "HBO +", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hboplus_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344200/cizhn0isnfauczmybgop.png", cat: "HBO Premium" },
-       { name: "HBO POP", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hbopop_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345430/sj8snppqk04loiqjaaqm.png", cat: "HBO Premium" },
-       { name: "HBO XTREME", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hboxtr_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344622/fmxc4uqlul9uqc3pcmxh.png", cat: "HBO Premium" },
-       { name: "HBO MUNDI", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hbomund_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344600/z0ecxrdo1hm2paiy4vab.png", cat: "HBO Premium" },
-       { name: "HBO FAMILY", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hbofam_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344187/kzwx3nq6xbfdtbeobib5.png", cat: "HBO Premium" },
-       { name: "HBO SIGNATURE", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/hbosig_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344220/rtvwm504qp58fuhwwrdn.png", cat: "HBO Premium" },
-       { name: "CINE PREMIUM", url: "https://joy.nx-pc.edge-apps.net/hls/d4bhf-fflam-b5fon-7kcff.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345688/s1gwqr9b7ipbxy4jm2cp.png", cat: "Cine" },
-       { name: "CINE FAMILIAR", url: "https://joy.nx-pc.edge-apps.net/hls/14nj5-o3nib-lfdgo-ha1ib.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345713/ikagari0fl7tttbrotfb.png", cat: "Cine" },
-       { name: "CINE HISPANO", url: "https://joy.nx-pc.edge-apps.net/hls/pf7b-4746p-o4dp5-5angp.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345736/dustkhfhwtbduu0zrl5n.png", cat: "Cine" },
-       { name: "DHE", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/dhe_hls/playlist.m3u8", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcDmRkdIMcNM8GEajhM_SxqrX4TR3xWtJA_pApMUNEnVI8qGBvb_rjAUOwmZ3_VAE7VIRMBmxvxrXzj7U6kDU9qRIUCQKeORIxhDElltMI_P0e1dHgBQ8bWI49ah79c78ZJsH5-K4mLZ2-cJWt3mWQ1TfVnkRRIwEELPK8zX0WkZ2qb3bJJnOWbs6ushI/s320/DHE.png", cat: "Cine" },
-       { name: "HOLA TV", url: "https://joy.nx-pc.edge-apps.net/hls/cl7lf-54530-2egee-p14da.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345815/asgjcf2jzh98oxnxkqx9.png", cat: "Variedad" },
-       { name: "CARAS TV", url: "https://joy.nx-pc.edge-apps.net/hls/na8aa-7l8ko-4gd7d-p3613.m3u8", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgtIazZ8-vJfSsbLwDLCdObeZ1M1-y78lktWOBEA9WBonr5xSMX00soYe2vwGg6TlPBc8Z53Ef43VNxNHZTW-0FwDxcwLCwomnIipVmka4qD0_Xb_VyWJw44jEox3DXcOwi7bbOc9bBvzJDi0bv0OOZYj9xEDbqZdvRXfas_q6V5KhCs_hTGOGoSsk2WXo/s200/CYaZv3N-removebg-preview.png", cat: "Variedad" },
-       { name: "AMC SERIES", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/amcseries_hls/playlist.m3u8", logo: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhIujLcfxvn8tfR8le1_gAEYYzCOXuo7MA7f5S4XdJ0TN8q1BsWUVSB0QmfsL6e3M8FJ3i85K6bVV4p8jgJyK3onThFbMsVtEeST9CKnb2lNHKoY9EG_um6VjQwQiaYuKbh-q5rF1q9mNlX2HuwMJ_72PJNGZVq_z1RdtxvXUCvRIJc2WKpUSKGwG55jOI/s1000/AMC%20Series.png", cat: "Variedad" },
-       { name: "EL GOURMET", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/gourmet_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343608/ywvhapelbx9i9pv9y9bu.png", cat: "Cocina" },
-       { name: "DISCOVERY HOME&HEALTH", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/disc_hh_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344394/cq5nr0zp7kdh1mdi2mrv.png", cat: "Variedad" },
-       { name: "TRAVEL XP", url: "https://joy.nx-pc.edge-apps.net/hls/hp6dm-89cho-6n1l-5f64l.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684347549/lh2ojz3jqohgkhbdmpkf.png", cat: "Documentales" },
-       { name: "NATGEO", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/natgeohd_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344660/ljfeibwcia0jp57u8v1a.png", cat: "Documentales" },
-       { name: "LOVE NATURE", url: "https://joy.nx-pc.edge-apps.net/hls/f2ljo-jb10f-fjjfe-622fg.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345917/n2qqptz2k27lp759s2it.png", cat: "Documentales" },
-       { name: "DISCOVERY TLC", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/dsc_tlc_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1749408442/tgphkhbrgddkeznerscl.png", cat: "Documentales" },
-       { name: "GUSTO TV", url: "https://joy.nx-pc.edge-apps.net/hls/jp51l-235gf-a6d71-e522k.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1750688691/xi9rhjpxp1pqiokwfqqd.png", cat: "Cocina" },
-       { name: "SUN CHANNEL", url: "https://joy.nx-pc.edge-apps.net/hls/7oj3g-cdej2-kl131-b7hd8.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1750353395/zjn2noajhrjd7ggxv31l.webp", cat: "Variedad" },
-       { name: "ENCUENTRO", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/encuentro_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346279/zzju24oya4wvydk1rixe.png", cat: "Cultura" },
-       { name: "CANAL A", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/canala_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684348098/nvcumj4q8bkqiryclisr.png", cat: "Cultura" },
-       { name: "CANAL RURAL", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/rural_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344744/pqumpg7ubdiyzmozdwsr.png", cat: "Campo" },
-       { name: "CNN EN ESPAÑOL", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/cnne_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684343477/jpaigp1p0weik0s8red0.png", cat: "Noticias" },
-       { name: "EURONEWS", url: "https://joy.nx-pc.edge-apps.net/hls/eo5mp-m89lb-e57f0-kpkkd.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345964/f7zdzojarsngu4fqqlsk.png", cat: "Noticias" },
-       { name: "DW", url: "https://ushuaia-vision.cdn.rcs.net.ar/g48EaXkDY2tZP6qmpzKjFQ/dw_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345941/g93i18rqzqekt6g2an5x.png", cat: "Noticias" },
-       { name: "RAI ITALIA", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/rai_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344717/pcsili7bymriuh3ohuvu.png", cat: "Internacional" },
-       { name: "TVE", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/tve_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684345221/qa3wlkvpshquf7q4co8a.png", cat: "Internacional" },
-       { name: "CANAL 24H", url: "https://joy.nx-pc.edge-apps.net/hls/h7m22-llhbf-mkh78-f4eo6.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684348695/ygs1l09aiaxf4ygejvxl.png", cat: "Noticias" },
-       { name: "DNEWS", url: "https://joy.nx-pc.edge-apps.net/hls/cp9g2-5ok8b-g99na-o15il.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1737634193/xgs69thn3o5y3d9r9mzr.png", cat: "Noticias" },
-       { name: "RT EN ESPAÑOL", url: "https://joy.nx-pc.edge-apps.net/hls/1pf1o-l8fhp-a55hc-1j09k.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1746530729/fchli6dxupqmekgkhadb.png", cat: "Noticias" },
-       { name: "CM", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/cmmusica_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684344575/yd4t3x3rbewslfiypwdp.png", cat: "Música" },
-       { name: "HTV", url: "https://joy.nx-pc.edge-apps.net/hls/l4b0l-njg9j-4ic97-4c15b.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346215/v83epbwjwd9o2fspi3ud.png", cat: "Música" },
-       { name: "QUIERO MUSICA", url: "https://tvfuego.cdn.rcs.net.ar/HGxWMSZtXcn2A3b9zrDfUL/quieromusica_hls/playlist.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346240/iva94ooqr6f8kvptmgmr.png", cat: "Música" },
-       { name: "RADIO NACIONAL FOLKLORICA", url: "https://ice3.edge-apps.net/joy-radios/folklorica/playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1716504959/radios/appJOY/Logo_NacionalFolklorica_ixubqd.png", cat: "Radio" },
-       { name: "RADIO POWER MAX", url: "https://videostream.shockmedia.com.ar:19360/radio1045/radio1045.m3u8", logo: "http://res.cloudinary.com/doj39auqi/image/upload/v1684346010/b6kr0ffmk2j8e1pkswsv.png", cat: "Radio" },
-       { name: "RADIO NACIONAL ROCK", url: "https://ice3.edge-apps.net/joy-radios/rocknacional/playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1716511459/radios/appJOY/Logo_NacionalRock_hnhjgz.png", cat: "Radio" },
-       { name: "RADIO VORTERIX", url: "https://prepublish.f.qaotic.net/a08/ngrp:vorterix_video1-20057_all/Playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1714824281/radios/vorterix_jpupkx.png", cat: "Radio" },
-       { name: "RADIO 2 ROSARIO", url: "https://ice3.edge-apps.net/joy-radios/radio2/playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1716511233/radios/appJOY/Logo_Radio2_hz2fih.png", cat: "Radio" },
-       { name: "FM VIDA ROSARIO", url: "https://ice3.edge-apps.net/joy-radios/fmvida/playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1716504884/radios/appJOY/Logo_FmVida_oftcf9.png", cat: "Radio" },
-       { name: "NACIONAL AM870", url: "https://ice3.edge-apps.net/joy-radios/am870/playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1716511414/radios/appJOY/Logo_AM870_kyslsa.png", cat: "Radio" },
-       { name: "RADIO NACIONAL CLASICA", url: "https://ice3.edge-apps.net/joy-radios/clasica/playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1716504906/radios/appJOY/Logo_NacionalClasica_urqkxf.png", cat: "Radio" },
-       { name: "FM PLUS ROSARIO", url: "https://ice3.edge-apps.net/joy-radios/frecuencia_plus/playlist.m3u8", logo: "https://res.cloudinary.com/doj39auqi/image/upload/v1714824501/radios/logo_fmplus_br21jy.png", cat: "Radio" }
+(function(){"use strict";
+var C=[
+['TELEFE','NACIONALES','https://cdn-zapster-ros.trapemn.tv:1936/CD-LATAM/TelefeHD.stream/playlist.m3u8'],
+['EL TRECE','NACIONALES','https://cdn-zapster-ros.trapemn.tv:1936/CD-LATAM/ElTreceHD.stream/playlist.m3u8'],
+['NET TV','NACIONALES','https://unlimited1-buenosaires.dps.live/nettv/nettv.smil/playlist.m3u8'],
+['ALPHA TV','NACIONALES','https://redirector.rudo.video/hls-video/c54ac2799874375c81c1672abb700870537c5223/bravo/bravo.smil/playlist.m3u8'],
+['TN','NOTICIAS','https://live-01-01-tn.vodgc.net/TN_DAI_Beta/index.m3u8'],
+['+PERFIL','NOTICIAS','https://unlimited1-buenosaires.dps.live/perfiltv/perfiltv.smil/playlist.m3u8'],
+['TYC SPORTS','DEPORTES','https://live-04-11-tyc-app-web.vodgc.net/tyc24/index.m3u8'],
+['ESPN PREMIUM','DEPORTES','"https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a086/index.m3u8?token=miguel2026'],
+['TNT SPORTS PREMIUM','DEPORTES','https://teleapp-tv-705810336142.us-west2.run.app/api/proxy?url=http://181.209.37.74:8001/play/a06z/index.m3u8?token=miguel2026'],
+['CLARO SPORTS','DEPORTES','https://dai.google.com/linear/hls/event/_OKWx76jT7mivD6d-25QAw/master.m3u8'],
+['EL GARAGE','DEPORTES','https://stream1.sersat.com/hls/garagetv.m3u8'],
+['TYC SPORTS FAN','DEPORTES','https://streams2.sofast.tv/ptnr-hispasat/title-TYC-SPORTS-LATMA/v1/master/611d79b11b77e2f571934fd80ca1413453772ac7/18a85327-6b17-4d41-8c2f-41ff8511c1dd/sofastplayout/2f7c083c-a970-4cd4-a634-0b56fed45495/manifest.m3u8']];
+C.push(
+['LPF PLAY','LPF PLAY','https://emitiendoenvivo.com:443/lpf/1.m3u8'],
+['LPF PLAY 1','LPF PLAY','https://emitiendoenvivo.com:443/lpf/2.m3u8'],
+['LPF PLAY 2','LPF PLAY','https://emitiendoenvivo.com:443/lpf/3.m3u8'],
+['LPF PLAY 3','LPF PLAY','https://emitiendoenvivo.com:443/lpf/4.m3u8'],
+['LPF PLAY 4','LPF PLAY','https://emitiendoenvivo.com:443/lpf/5.m3u8'],
+['LPF PLAY 5','LPF PLAY','https://emitiendoenvivo.com:443/lpf/6.m3u8'],
+['LPF PLAY 6','LPF PLAY','https://emitiendoenvivo.com:443/lpf/7.m3u8'],
+['LPF PLAY 7','LPF PLAY','https://emitiendoenvivo.com:443/lpf/8.m3u8'],
+['LPF PLAY 8','LPF PLAY','https://emitiendoenvivo.com:443/lpf/9.m3u8'],
+['LPF PLAY 9','LPF PLAY','https://emitiendoenvivo.com:443/lpf/10.m3u8'],
+['LPF PLAY 10','LPF PLAY','https://emitiendoenvivo.com:443/lpf/11.m3u8'],
+['LPF PLAY 11','LPF PLAY','https://emitiendoenvivo.com:443/lpf/12.m3u8'],
+['LPF PLAY 12','LPF PLAY','https://emitiendoenvivo.com:443/lpf/13.m3u8']);
+C.push(
+['CLAN','INFANTILES','https://rtvelivestream-rtveplayplus.rtve.es/rtvesec/int/clan_int_main_dvr_1080.m3u8'],
+['EL REINO INFANTIL','INFANTILES','https://amg17724-amg17724c1-lg-latam-11388.playouts.now.amagi.tv/ts-us-w2-n1/playlist/amg17724-purodigitalandstudioslu-elreinoinfantilspa-lglatam/playlist.m3u8'],
+['PRIMIRED','INFANTILES','https://cdn.global.elektamedia.com/live/c7eds/Primired/SA_LIVE_hls_enc/master.m3u8'],
+['LAIKA CHANNEL','INFANTILES','https://183.bozztv.com/giatv/giatv-luchytv/luchytv/chunks.m3u8'],
+['MAGIC KIDS','INFANTILES','https://kiiroilabs.ddns.net/magickids/stream/stream.m3u8'],
+['RETROMAGICO','INFANTILES','https://183.giatvcdn.com/ssh101/ssh101/retromagicocnl/chunks.m3u8'],
+['DELMI TV','INFANTILES','https://live20.bozztv.com/giatvplayout7/giatv-210634/tracks-v1a1/mono.ts.m3u8'],
+['DELMI CHANNEL','INFANTILES','https://live20.bozztv.com/giatvplayout7/giatv-209474/playlist.m3u8'],
+['STAR','CINE Y SERIES','https://rtvelivestream-rtveplayplus.rtve.es/rtvesec/int/star_main_dvr_1080.m3u8'],
+['ROMANCE CHANNEL','CINE Y SERIES','https://romancechannel-arg.akamaized.net/Evrideo/0bc8531f-9192-4c3f-a157-fc052f5a045f_1000026191_HLS/manifest.m3u8'],
+['TELECLASICA','CINE Y SERIES','https://vtm1.msinteractiva.com/teleclasica/teleclasica/playlist.m3u8'],
+['CINDIE TV','CINE Y SERIES','https://cindielite-arg.akamaized.net/scheduler/scheduleMaster/387.m3u8'],
+['VIVE KANAL D DRAMA','NOVELAS','https://vivekanalddrama-arg.akamaized.net/playlist.m3u8'],
+['NOVELISIMA','NOVELAS','https://novelisimaottera-ioriver-cdn.encoders.immergo.tv/master.m3u8'],
+['CLASSIC ARTS SHOWCASE','DOCUMENTALES','https://classicarts.akamaized.net/hls/live/1024257/CAS/master_720p30.m3u8'],
+['BILLBOARD','MUSICALES','https://smt-usr-edge01.sensa.com.ar/output/SMT1/BLBH/playlist.m3u8'],
+['EL FOLKLORICO TV','MUSICALES','https://stream.t5satelital.blog/hls/elfolkloricoweb.m3u8'],
+['WOX TV','MUSICALES','https://tuvideoonline.com.ar:3332/live/xlevelmedialive.m3u8'],
+['MUSIC 21','MUSICALES','https://live20.bozztv.com/akamaissh101/ssh101/m21puramusica/playlist.m3u8'],
+['EWTN','RELIGIOSOS','https://1654596987.rsc.cdn77.org/1654596987/tracks-v2a1/mono.m3u8'],
+['ORBE 21','RELIGIOSOS','https://stream.arcast.net:4443/canal21/ngrp:canal21_all/playlist.m3u8'],
+['ENLACE','RELIGIOSOS','https://livecdnusa.enlace.plus/enlace/master.m3u8'],
+['MARIA VISION','RELIGIOSOS','https://1601580044.rsc.cdn77.org/live/_jcn_/amls:Mariavision/playlist.m3u8'],
+['ALIENTO VISION','RELIGIOSOS','https://627bb251f23c7.streamlock.net:444/Alientoenvivo/Alientoenvivo/playlist.m3u8'],
+['NUEVO TIEMPO','RELIGIOSOS','https://streamtv.novotempo.com/CDN-TV-ES/smil:tvnuevotiempo.smil/playlist.m3u8'],
+['DAYSTAR ESPAÑOL','RELIGIOSOS','https://live-mcl.cdn01.net/web/v2a5w28m3/playlist.m3u8'],
+['MARANATHA','RELIGIOSOS','https://cdn.sensa.com.ar/output/ARR3/MRTH/playlist.m3u8'],
+['CIUDAD MAGAZINE','VARIEDADES','https://livetrx01.vodgc.net/live-01-07-ciudad.vodgc.net/tracks-v3a1/mono.m3u8'],
+['UNIFE','VARIEDADES','https://cdn.mycloudstream.io/hls/live/broadcast/pgv5kerk/index.m3u8'],
+['CHACRA TV','VARIEDADES','https://5f700d5b2c46f.streamlock.net/chacratv/chacratv/chunklist_w279498944.m3u8'],
+['ARGENTINISIMA SATELITAL','VARIEDADES','https://stream1.sersat.com/hls/argentinisima.m3u8'],
+['TELESUR','NOTICIAS INTERNACIONALES','https://mblesmain01.telesur.ultrabase.net/mbliveMain/480p/playlist.m3u8'],
+['CNN EN ESPAÑOL','NOTICIAS INTERNACIONALES','https://amg00803-cnnfast-amg00803c3-lg-es-5477.playouts.now.amagi.tv/ts-eu-w1-n2/playlist/amg00803-cnnfastinternational-cnnesponal-lges/cb543d167a6c6c8884cb396ecef342a6f9591fde1d6988693eb5518975d1073edce2a59caa08ff16388f1ede7f0a66413a3e951fda77118fd87eb141453c5728cfffe729a2c05616b7db083429b56a062a866a68ac39437ed0e21f48a238b6720a5aa82a66443d80b846ac7356db80148b61299bce8c37683f03409a5e5afba358b1ebe10c47db68a6b61a55c77b41b39f43c8821da6d2dc0e965ed470f3159ac4f0d8da15d78ef33893738adf9ed34307fba14bd1a07ca4dd9f672d957f2934663f8490b28e80b81b253931cbf0deab6dbf32c38c37886336c160d22fd665e2e3cd789c529223d996fee238a963627036768d45eaf4da3836af6ff8a3a6fc617b9cf8007149c822fa372e369feef4358dd110858ceee4de663037da9849979cfdd6a1e0cd02ab2cc4c3fb8f2e0260574453d613f2c12dec20d32efc9553390a190dedbb45d48adc693560648f941181404cf788ddc3972513fe4d3716a86cd050002ceb316f77ea64b9b9347e862b0fca6468af1665ce12b2e86cc6a6dde41432fa8b9415b13cb9c77fb89c35a063385615a0b27d0f372b53e4ae375d7e29b9068eb5edee780e0ce98dbdddc841370a3c571f4cbcebe9749499d36b7a32c4402d747b001df55581393f61a1d7b97c782a6e1eb448b37fe5c57a70e006f92934/170/640x360_1020800/index.m3u8'],
+['RT EN ESPAÑOL','NOTICIAS INTERNACIONALES','https://rt-esp.rttv.com/live/rtesp/playlist.m3u8'],
+['FRANCE 24 EN ESPAÑOL','NOTICIAS INTERNACIONALES','https://live.france24.com/hls/live/2037220/F24_ES_HI_HLS/master_5000.m3u8'],
+['DW EN ESPAÑOL','NOTICIAS INTERNACIONALES','https://dwamdstream104.akamaized.net/hls/live/2015530/dwstream104/stream01/streamPlaylist.m3u8'],
+['24H','NOTICIAS INTERNACIONALES','https://rtvelivestream.rtve.es/rtvesec/24h/24h_main_dvr.m3u8'],
+['CNN INTERNATIONAL','NOTICIAS INTERNACIONALES','https://ds2c506obo7m8.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-7zjq3tdqasbg8/index.m3u8'],
+['FRANCE 24 ENGLISH','NOTICIAS INTERNACIONALES','https://live.france24.com/hls/live/2037218/F24_EN_HI_HLS/master_5000.m3u8'],
+['FRANCE 24','NOTICIAS INTERNACIONALES','https://live.france24.com/hls/live/2037179/F24_FR_HI_HLS/master_5000.m3u8'],
+['RAI NEWS 24','NOTICIAS INTERNACIONALES','https://d27wu3gni4gipu.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-7i6bsjw4lfg88/ABCD/Rai/RaiNews24_IT/rainews1/playlist.m3u8'],
+['AL JAZEERA','NOTICIAS INTERNACIONALES','https://live-hls-web-aje-gcp.thehlive.com/AJE/index.m3u8'],
+['FRANCE 24 ARABIC','NOTICIAS INTERNACIONALES','https://live.france24.com/hls/live/2037222-b/F24_AR_HI_HLS/master_5000.m3u8'],
+['AZTECA INTERNACIONAL','INTERNACIONALES','https://azt-mun.otteravision.com/azt/mun/mun.m3u8'],
+['VENEVISION INTERNACIONAL','INTERNACIONALES','https://pubads.g.doubleclick.net/ssai/event/xl2VClgXQmKB5abFGlmyZQ/master.m3u8'],
+['TVE','INTERNACIONALES','https://rtvelivestream-rtveplayplus.rtve.es/rtvesec/int/tvei_ame_main_1080.m3u8'],
+['ETB1 ON','INTERNACIONALES','https://cdn1.etbon.eus/etb1on/index.m3u8'],
+['ETB2 ON','INTERNACIONALES','https://cdn1.etbon.eus/etb2on/index.m3u8'],
+['UCL TELEVISION','INTERNACIONALES','https://streamingmcbo.ddns.net:8081/ucltelevision/playlist.m3u8'],
+['ARIRANG TV KOREA','INTERNACIONALES','https://amdlive-ch01-g-ctnd-com.akamaized.net/arirang_1gch/smil:arirang_1gch.smil/playlist.m3u8'],
+['NHK WORLD JAPAN','INTERNACIONALES','https://media-tyo.hls.nhkworld.jp/hls/w/live/1/sig/530224ae7fe14c4d840b06a0299d12f2255183a4d5ef16447a48ddc0b8f204d7/v3.m3u8'],
+['HISPAN TV','INTERNACIONALES','https://live.presstv.ir/hls/hispantv.m3u8'],
+['CGTN ESPAÑOL','INTERNACIONALES','https://espanol-liveali-h5.cgtn.com/hls/LSveOGBaBw41Ea7ukkVAUdKQ220802LSTexu6xAuFH8VZNBLE1ZNEa220802cd/playlist.m3u8?wsSecret=868b3e336667d37bdf9036495398d808&wsTime=1792527511']);
+var G='https://www.google.com/s2/favicons?sz=128&domain=',D={};
+function dm(d,n){n.forEach(function(x){D[x]=d})}
+dm('telefe.com',['Telefe']);dm('eltrecetv.com.ar',['El Trece']);dm('tn.com.ar',['TN']);dm('perfil.com',['+Perfil']);
+dm('tycsports.com',['TyC Sports','TyC Sports Fan']);dm('clarosports.com',['Claro Sports']);dm('billboard.com',['Billboard']);
+dm('ewtn.com',['EWTN']);dm('enlace.org',['Enlace']);dm('daystar.com',['Daystar Español']);dm('nuevotiempo.org',['Nuevo Tiempo']);
+dm('classicartsshowcase.org',['Classic Arts Showmcase']);dm('telesurtv.net',['Telesur']);dm('cnnespanol.cnn.com',['CNN en Español']);
+dm('actualidad.rt.com',['RT en Español']);dm('france24.com',['France 24 Español','France 24 English','France 24','France 24 Arabic']);
+dm('dw.com',['DW en Español']);dm('cnn.com',['CNN International']);dm('rainews.it',['Rai News 24']);dm('aljazeera.com',['Al Jazeera']);
+dm('tvazteca.com',['Azteca Internacional']);dm('venevision.net',['Venevisión Internacional']);dm('rtve.es',['TVE','24H']);
+dm('etbon.eus',['ETB1 On','ETB2 On']);dm('arirang.com',['Arirang TV Korea']);dm('www3.nhk.or.jp',['NHK World Japan']);
+dm('hispantv.com',['Hispan TV']);dm('espanol.cgtn.com',['CGTN Español']);
+dm('canalnet.tv',['Net TV']);dm('canalorbe21.com',['Orbe 21']);dm('mariavision.com',['María Visión']);dm('alientovision.com',['Aliento Visión']);
+dm('kanalddrama.com',['Vive Kanal D Drama']);dm('elgarage.com',['El Garage']);dm('revistachacra.com.ar',['Chacra TV']);
+/* Logos propios: pegá la URL de la imagen entre las comillas de cada canal y tiene prioridad sobre el automático */
+var L={'TELEFE':'https://upload.wikimedia.org/wikipedia/commons/c/cc/Telefe_%28nuevo_logo%29.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=thumbnail_unscaled','EL TRECE':'https://upload.wikimedia.org/wikipedia/commons/e/ec/Logo_Canal_13_200_8.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=original','NET TV':'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/Net_TV_logo.png/960px-Net_TV_logo.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=thumbnail','Alpha TV':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcbvNEkATEeeNlikllpM5zgCaxZdysXyUvTedqJ-X_qYWwKb5up0qOrtvYe2Brrv98JEL0Tlg9lab2rMx7RRRapy1RPJsRxI8kaPSUg771YiwY9sPwfwbFr82VPmo9OR2cPuinFF6dGTNsM7RLzTtpgLP02mtx_TGoPwA5dCn4A1-Gg4ZcPNElVr_ocOE/s256/IMG-20260914-WA0017-removebg-preview__1_-removebg-preview.png','Clan':'','El Reino Infantil':'https://www.appcreator24.com/srv/imgs/seccs/38846461_ico.png','Primired':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjlhiVD_qOAEfM3RGvtDMIeEyNEIwgYQ7PFXPlClFn05Ktw5weRgxuglPYBaRAlBlzrFhn9F-QzQDHCnl8ayXr48sHK9qSA7Wqld_aj_K6vahNPl0-dbbfWZslHO6LkiP44Gj9H_09qlcMzviq83uf9oYMSgD80cZCgGuQMyru2G8XScWzo5GW3A-Suzio/s256/526f5dca-5ebd-4c8e-9754-008d09ba82f0_removalai_preview.png','Laika Channel':'','Magic Kids':'','Retromágico':'','Delmi TV':'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgRrpdAg3XUCk5qgSaaqEw9j90lthelbH5LoIG_GhDb1W8eu2zXCWvPi-ddmMS8blbffzJNBvMLpu5Kgk87vUxmXTfAQouLBo8pC2l8i7v2dQfIB4sEf8lxdUgo0yKVi5iQBvWhAJGwW6cUQ4eRLiGNhQQO85Hecn17gL-cY68ihCQpLEOD0tbSJjLVuek/s256/Delmi%20TV%20%282%29.png','Delmi Channel':'','Star':'','Romance Channel':'','Teleclásica':'','Cindie TV':'','Novelísima':'','El Folklórico TV':'','Wox TV':'','Music 21':'','Maranatha':'','Ciudad Magazine':'','Unife':'','Argentinísima Satelital':'','UCL Televisión':''};
+C.forEach(function(c){if(c[0].indexOf('LPF Play')===0)D[c[0]]='https://lpf.vod.immergo.tv/lpf-immergo/uploaded/c0146dd1-dd1c-46b8-83e6-4ecb8fa8ca02.png';if(!c[3]&&L[c[0]])c[3]=L[c[0]];if(!c[3]&&D[c[0]]){c[3]=G+D[c[0]];c[4]=1}});
 
-   ];
+var P='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+I={rew:'<path d="M1 4v6h6M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/>',fwd:'<path d="M23 4v6h-6M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/>',sig:'<path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 12v8"/>',srch:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',back:'<path d="M19 12H5M12 19l-7-7 7-7"/>',prev:'<path d="M19 20 9 12l10-8zM5 19V5"/>',next:'<path d="M5 4l10 8-10 8zM19 5v14"/>',pause:'<path d="M7 4v16M17 4v16"/>',play:'<path d="M6 4l14 8-14 8z"/>',vol:'<path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',mute:'<path d="M11 5 6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6"/>',cast:'<path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6M2 12a9 9 0 0 1 8 8M2 16a5 5 0 0 1 4 4M2 20h.01"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',full:'<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>'};
+function ic(n){return P+I[n]+'</svg>'}
+function $(i){return document.getElementById(i)}
+var v=$('v'),pl=$('pl'),dr=$('dr'),cur=0,hls=null,cs=null,ht,filt='',cat='';
 
-   const video = document.getElementById('mainVideo');
-   let hls = new Hls();
-   let currentChannel = null;
-   let castSession = null;
-   let keepLocalPlaying = true; // Mantener reproducción local activa al transmitir
+[].forEach.call(document.querySelectorAll('[data-ic]'),function(e){e.innerHTML=ic(e.getAttribute('data-ic'))});
+$('cnt').textContent=C.length;
 
-   // Evita que el reproductor local se pause automáticamente al conectar Cast o Remote Playback
-   video.addEventListener('pause', () => {
-       if (keepLocalPlaying && (castSession || ('remote' in video && video.remote.state === 'connected'))) {
-           setTimeout(() => {
-               if (video.paused && keepLocalPlaying) {
-                   video.play().catch(() => {});
-               }
-           }, 250);
-       }
-   });
+function clock(){var t;try{t=new Intl.DateTimeFormat('es-AR',{timeZone:'America/Argentina/Buenos_Aires',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())}catch(e){t=new Date().toLocaleTimeString()}
+[].forEach.call(document.querySelectorAll('.clk'),function(e){e.textContent=t+' ARG'})}
+setInterval(clock,1000);clock();
 
-   // ==========================================
-   // INICIALIZACIÓN GOOGLE CAST SDK
-   // ==========================================
-   window['__onGCastApiAvailable'] = function(isAvailable) {
-       if (isAvailable) {
-           cast.framework.CastContext.getInstance().setOptions({
-               receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-               autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-           });
+function hue(s){for(var h=0,k=0;k<s.length;k++)h=(h*31+s.charCodeAt(k))%360;return h}
+function ini(n){return n.replace(/[^A-Za-z0-9+]/g,' ').trim().split(/\s+/).slice(0,2).map(function(w){return w[0]}).join('').toUpperCase()}
+function card(i){var c=C[i],h=hue(c[0]);return '<div class="card" tabindex="0" data-i="'+i+'" style="background:linear-gradient(135deg,hsl('+h+',55%,30%),hsl('+(h+40)+',65%,11%))">'+(c[3]?'<img class="lg" alt="'+ini(c[0])+'" src="'+c[3]+'">':'<span class="ini">'+ini(c[0])+'</span>')+'<span class="lv"><i></i>Vivo</span><div class="nm">'+c[0]+'</div></div>'}
+function render(){var q=filt.toLowerCase(),g={},o='';
+C.forEach(function(c,i){if((!cat||c[1]===cat)&&c[0].toLowerCase().indexOf(q)>-1)(g[c[1]]=g[c[1]]||[]).push(i)});
+for(var k in g)o+='<section><h2>'+k+'</h2><div class="row">'+g[k].map(card).join('')+'</div></section>';
+$('rows').innerHTML=o||'<p class="empty">No encontramos canales con ese nombre. Probá con otra búsqueda.</p>'}
 
-           const context = cast.framework.CastContext.getInstance();
-           context.addEventListener(
-               cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
-               (event) => {
-                   if (event.sessionState === cast.framework.SessionState.SESSION_STARTED ||
-                       event.sessionState === cast.framework.SessionState.SESSION_RESUMED) {
-                       castSession = context.getCurrentSession();
-                       updateCastUI(true, castSession.getCastDevice().friendlyName);
-                       if (currentChannel) loadMediaOnCast(currentChannel);
-                   } else if (event.sessionState === cast.framework.SessionState.SESSION_ENDED) {
-                       castSession = null;
-                       updateCastUI(false);
-                   }
-               }
-           );
-       }
-   };
+var cats=['Todos'];C.forEach(function(c){if(cats.indexOf(c[1])<0)cats.push(c[1])});
+$('chips').innerHTML=cats.map(function(k,n){return '<button class="chip'+(n?'':' on')+'">'+k+'</button>'}).join('');
+$('chips').onclick=function(e){var b=e.target;if(b.tagName!=='BUTTON')return;cat=b.textContent==='Todos'?'':b.textContent;[].forEach.call(this.children,function(x){x.classList.toggle('on',x===b)});render()};
+$('sq').oninput=function(){filt=this.value;render()};
+$('hp').onclick=function(){play(0)};
+$('hs').onclick=function(){$('chips').scrollIntoView({behavior:'smooth'})};
+$('rows').onclick=function(e){var t=e.target.closest?e.target.closest('.card'):null;if(t)play(+t.getAttribute('data-i'))};
+dr.innerHTML=C.map(function(c,i){return '<div class="di" data-i="'+i+'">'+c[0]+'</div>'}).join('');
+dr.onclick=function(e){var i=e.target.getAttribute('data-i');if(i!==null){play(+i);dr.classList.remove('on')}};
 
-   function loadMediaOnCast(ch) {
-       if (!castSession) return;
-       const mediaInfo = new chrome.cast.media.MediaInfo(ch.url, 'application/x-mpegurl');
-       mediaInfo.streamType = chrome.cast.media.StreamType.LIVE;
-       mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-       mediaInfo.metadata.metadataType = chrome.cast.media.MetadataType.GENERIC;
-       mediaInfo.metadata.title = ch.name;
-       mediaInfo.metadata.subtitle = "MARCONI TV - " + ch.cat;
-       if (ch.logo) {
-           mediaInfo.metadata.images = [{ url: ch.logo }];
-       }
+function flag(id,on){$(id).classList.toggle('on',!!on)}
+function hud(){pl.classList.remove('h');clearTimeout(ht);ht=setTimeout(function(){if(!dr.classList.contains('on'))pl.classList.add('h')},4000)}
+pl.onmousemove=pl.onclick=hud;
 
-       const request = new chrome.cast.media.LoadRequest(mediaInfo);
-       castSession.loadMedia(request).then(
-           () => {
-               // Reanuda el video local para reproducción simultánea en ambos dispositivos
-               if (keepLocalPlaying && video.paused) {
-                   video.play().catch(() => {});
-               }
-           },
-           (errorCode) => { console.error('Error enviando stream a Cast:', errorCode); }
-       );
-   }
+function play(i){cur=(i+C.length)%C.length;var c=C[cur];
+pl.classList.add('on');document.body.style.overflow='hidden';
+$('pn').textContent=c[0];$('pc').textContent=c[1];var lg=$('pg');if(c[3]){lg.src=c[3];lg.style.display='block'}else lg.style.display='none';
+flag('ld',1);flag('er',0);hud();
+[].forEach.call(dr.children,function(d,k){d.classList.toggle('a',k===cur)});
+if(hls){hls.destroy();hls=null}
+v.pause();v.removeAttribute('src');v.load();$('q').innerHTML='<option value="-1">Auto</option>';$('yt').innerHTML='';$('yt').style.display='none';v.style.display='block';
+flag('ct',!!cs);
+if(cs){flag('ld',0);castTo(c);return}
+var ym=c[2].match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/))([\w-]{11})/);
+if(ym){v.style.display='none';$('yt').style.display='block';$('yt').innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+ym[1]+'?autoplay=1&controls=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>';setTimeout(function(){flag('ld',0)},1500);return}
+if(c[2].indexOf('.m3u8')>-1&&window.Hls&&Hls.isSupported()){
+hls=new Hls({enableWorker:false});hls.loadSource(c[2]);hls.attachMedia(v);
+hls.on(Hls.Events.MANIFEST_PARSED,function(){v.volume=$('vs').value/100;v.play().catch(function(){});flag('ld',0);
+hls.levels.forEach(function(l,k){$('q').innerHTML+='<option value="'+k+'">'+(l.height?l.height+'p':'Nivel '+k)+'</option>'})});
+hls.rt=0;hls.on(Hls.Events.ERROR,function(e,d){if(!d.fatal)return;if(hls.rt++<3){if(d.type===Hls.ErrorTypes.MEDIA_ERROR)return hls.recoverMediaError();if(d.type===Hls.ErrorTypes.NETWORK_ERROR)return hls.startLoad()}flag('ld',0);flag('er',1)});
+}else{v.src=c[2];v.play().catch(function(){flag('ld',0);flag('er',1)})}}
 
-   function updateCastUI(isCasting, deviceName = "Smart TV") {
-       const btn = document.getElementById('castBtn');
-       const badge = document.getElementById('castStatusBadge');
-       const nameEl = document.getElementById('castDeviceName');
+v.onplaying=function(){flag('ld',0);flag('er',0)};
+v.onplay=v.onpause=function(){$('pp').innerHTML=ic(v.paused?'play':'pause')};
+v.onerror=function(){flag('ld',0);flag('er',1)};
+var sk=$('sk'),seeking=false;
+function ft(t){var m=Math.floor(t/60);t=Math.floor(t%60);return(m<10?'0'+m:m)+':'+(t<10?'0'+t:t)}
+function fin(){return isFinite(v.duration)&&v.duration>0}
+v.ontimeupdate=function(){if(!seeking&&fin())sk.value=v.currentTime/v.duration*100;$('td').textContent=ft(v.currentTime||0)+' / '+(fin()?ft(v.duration):'En vivo')};
+sk.oninput=function(){seeking=true};
+sk.onchange=function(){if(fin())v.currentTime=sk.value/100*v.duration;seeking=false};
+$('rw').onclick=function(){if(v.currentTime)v.currentTime=Math.max(0,v.currentTime-10)};
+$('fw').onclick=function(){if(v.currentTime)v.currentTime=Math.min(v.duration||0,v.currentTime+10)};
+function shut(){if(hls){hls.destroy();hls=null}$('yt').innerHTML='';v.pause();v.removeAttribute('src');v.load();pl.classList.remove('on');dr.classList.remove('on');document.body.style.overflow='';
+if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen()}
+function vi(){$('mu').innerHTML=ic(v.muted||v.volume===0?'mute':'vol')}
 
-       if (isCasting) {
-           btn.classList.add('casting-active');
-           badge.classList.remove('hidden');
-           badge.classList.add('flex');
-           nameEl.innerText = `En ambos: Aquí + ${deviceName}`;
-       } else {
-           btn.classList.remove('casting-active');
-           badge.classList.add('hidden');
-           badge.classList.remove('flex');
-       }
-   }
+$('bk').onclick=shut;
+$('pv').onclick=function(){play(cur-1)};
+$('nx').onclick=function(){play(cur+1)};
+$('pp').onclick=function(){v.paused?v.play():v.pause()};
+$('mu').onclick=function(){v.muted=!v.muted;vi()};
+$('vs').oninput=function(){v.volume=this.value/100;v.muted=+this.value===0;vi()};
+$('q').onchange=function(){if(hls)hls.currentLevel=+this.value};
+$('db').onclick=function(){dr.classList.toggle('on');hud()};
+$('fs').onclick=function(){if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else{(pl.requestFullscreen||pl.webkitRequestFullscreen).call(pl)}};
 
-   // ==========================================
-   // FUNCIÓN PRINCIPAL DE CAST (SAMSUNG / LG / CHROMECAST / AIRPLAY)
-   // ==========================================
-   async function triggerCast() {
-       if (!currentChannel) {
-           alert("Primero selecciona un canal para transmitir.");
-           return;
-       }
+/* Google Cast */
+window.__onGCastApiAvailable=function(ok){if(!ok||!window.cast)return;
+var x=cast.framework.CastContext.getInstance();
+x.setOptions({receiverApplicationId:chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,autoJoinPolicy:chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED});
+x.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED,function(e){var S=cast.framework.SessionState;
+if(e.sessionState===S.SESSION_STARTED||e.sessionState===S.SESSION_RESUMED){cs=x.getCurrentSession();if(pl.classList.contains('on'))play(cur)}
+else if(e.sessionState===S.SESSION_ENDED){cs=null;flag('ct',0);if(pl.classList.contains('on'))play(cur)}})};
+function castTo(c){if(!cs.loadMedia){alert("Transmisión simulada exitosa hacia la pantalla grande: Reproduciendo '"+c[0]+"'");return}var m=new chrome.cast.media.MediaInfo(c[2],'application/x-mpegurl');
+m.metadata=new chrome.cast.media.GenericMediaMetadata();m.metadata.title=c[0];
+cs.loadMedia(new chrome.cast.media.LoadRequest(m)).catch(function(){flag('er',1)})}
+function tcm(){flag('cm',!$('cm').classList.contains('on'))}
+$('cb').onclick=function(){
+if(location.protocol==='file:')alert("Aviso: Estás abriendo el archivo como 'file:///'. Google Cast requiere un servidor web local (como Live Server en VSCode o localhost) para detectar dispositivos en tu red.");
+if(window.cast&&cast.framework){try{cast.framework.CastContext.getInstance().requestSession().catch(tcm)}catch(e){tcm()}}else tcm()};
+$('cd').onclick=function(){alert('Conectando con la Smart TV de la red local...');flag('cm',0);cs={connected:true};play(cur)};
 
-       // Asegura que el reproductor local esté reproduciendo antes de enviar a la TV
-       if (video.paused) {
-           video.play().catch(() => {});
-       }
+/* Teclado y control remoto (flechas, Enter, Back de webOS/Tizen) */
+document.onkeydown=function(e){var k=e.keyCode;
+if(!pl.classList.contains('on')){if(k===13&&e.target.className==='card')play(+e.target.getAttribute('data-i'));return}
+hud();
+if(k===27||k===8||k===461||k===10009)shut();
+else if(k===38||k===33)play(cur-1);
+else if(k===40||k===34)play(cur+1);
+else if(k===32){e.preventDefault();$('pp').click()}
+else if(k===70)$('fs').click();
+else if(k===77)$('mu').click()};
 
-       // 1. Intentar Google Cast SDK
-       if (window.cast && cast.framework) {
-           try {
-               await cast.framework.CastContext.getInstance().requestSession();
-               if (keepLocalPlaying && video.paused) video.play().catch(() => {});
-               return;
-           } catch (err) {
-               if (err === 'cancel') return;
-           }
-       }
+$('rows').addEventListener('error',function(e){var t=e.target;if(t.className==='lg'){var x=document.createElement('span');x.className='ini';x.textContent=t.alt;t.parentNode.replaceChild(x,t)}},true);
+$('pg').onerror=function(){this.style.display='none'};
 
-       // 2. Intentar Remote Playback API (Chrome/Edge hacia Smart TVs)
-       if ('remote' in video) {
-           try {
-               await video.remote.prompt();
-               if (keepLocalPlaying && video.paused) video.play().catch(() => {});
-               return;
-           } catch (err) {
-               console.log("Remote Playback no disponible o cancelado:", err);
-           }
-       }
-
-       // 3. Intentar AirPlay (Safari / iOS hacia Samsung y LG compatibles)
-       if (window.WebKitPlaybackTargetAvailabilityEvent && video.webkitShowPlaybackTargetPicker) {
-           video.webkitShowPlaybackTargetPicker();
-           return;
-       }
-
-       // 4. Fallback inteligente con guía para reproducir en ambos dispositivos
-       document.getElementById('streamUrlCopy').value = currentChannel.url;
-       const modal = document.getElementById('tvModal');
-       modal.classList.remove('hidden');
-       modal.classList.add('flex');
-   }
-
-   function closeTvModal() {
-       const modal = document.getElementById('tvModal');
-       modal.classList.add('hidden');
-       modal.classList.remove('flex');
-   }
-
-   function copyStreamUrl() {
-       const input = document.getElementById('streamUrlCopy');
-       input.select();
-       navigator.clipboard.writeText(input.value);
-       alert("Enlace M3U8 copiado al portapapeles.");
-   }
-
-   // ==========================================
-   // LÓGICA DEL REPRODUCTOR Y CANALES
-   // ==========================================
-   function loadChannels(filter = "") {
-       const container = document.getElementById('channelList');
-       container.innerHTML = "";
-      
-       channels.filter(c => c.name.toLowerCase().includes(filter.toLowerCase())).forEach(ch => {
-           const btn = document.createElement('div');
-           btn.className = "flex items-center gap-4 p-3 rounded-xl cursor-pointer hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-800 group mb-1";
-           btn.innerHTML = `
-               <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden p-1 shadow-md group-hover:scale-110 transition-transform">
-                    <img src="${ch.logo}" class="max-h-full object-contain">
-               </div>
-               <div class="flex-1">
-                   <p class="font-bold text-zinc-100 text-sm truncate">${ch.name}</p>
-                   <p class="text-[9px] text-zinc-500 uppercase tracking-widest">${ch.cat}</p>
-               </div>
-           `;
-           btn.onclick = () => {
-               document.querySelectorAll('.active-channel').forEach(el => el.classList.remove('active-channel'));
-               btn.classList.add('active-channel');
-               playSource(ch);
-           };
-           container.appendChild(btn);
-       });
-   }
-
-   function playSource(ch) {
-       currentChannel = ch;
-       document.getElementById('playerTitle').innerText = ch.name;
-       document.getElementById('currentCat').innerText = ch.cat;
-       document.getElementById('currentLogo').src = ch.logo;
-       document.getElementById('currentLogo').style.display = 'block';
-
-       // Enviar a Cast si hay sesión activa, pero SIN omitir la reproducción local
-       if (castSession) {
-           loadMediaOnCast(ch);
-       }
-
-       document.getElementById('loader').classList.remove('hidden');
-
-       if (Hls.isSupported()) {
-           hls.destroy();
-           hls = new Hls();
-           hls.loadSource(ch.url);
-           hls.attachMedia(video);
-           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-               video.play();
-               document.getElementById('loader').classList.add('hidden');
-           });
-       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-           video.src = ch.url;
-           video.play();
-           video.addEventListener('loadedmetadata', () => {
-               document.getElementById('loader').classList.add('hidden');
-           });
-       }
-       updateIcons('pause');
-   }
-
-   function handleFullscreen() {
-       const p = document.getElementById('player-section');
-       if (!document.fullscreenElement) {
-           p.requestFullscreen().then(() => {
-               if (screen.orientation && screen.orientation.lock) {
-                   screen.orientation.lock('landscape').catch(() => {
-                       console.log("Rotación no permitida por el navegador");
-                   });
-               }
-           });
-       } else {
-           document.exitFullscreen();
-           if (screen.orientation && screen.orientation.unlock) {
-               screen.orientation.unlock();
-           }
-       }
-   }
-
-   function togglePlay() {
-       if (video.paused) { 
-           keepLocalPlaying = true;
-           video.play();
-           updateIcons('pause'); 
-       } else { 
-           keepLocalPlaying = false;
-           video.pause(); 
-           updateIcons('play');
-       }
-   }
-
-   function updateIcons(state) {
-       document.getElementById('playBtn').setAttribute('data-lucide', state);
-       lucide.createIcons();
-   }
-
-   function setVolume(v) { 
-       video.volume = v; 
-   }
-
-   if ('remote' in video) {
-       video.remote.addEventListener('connect', () => {
-           updateCastUI(true, "Smart TV");
-           if (keepLocalPlaying && video.paused) video.play().catch(() => {});
-       });
-       video.remote.addEventListener('disconnect', () => updateCastUI(false));
-   }
-
-   document.getElementById('searchInput').oninput = (e) => loadChannels(e.target.value);
-   
-   // Inicialización
-   loadChannels();
-   lucide.createIcons();
-
-   // Auto-ocultar UI
-   let timer;
-   document.getElementById('player-section').onmousemove = () => {
-       const controls = document.querySelectorAll('.video-gradient-top, .video-gradient-bottom');
-       controls.forEach(c => c.style.opacity = "1");
-       clearTimeout(timer);
-       timer = setTimeout(() => {
-           if(!video.paused) controls.forEach(c => c.style.opacity = "0");
-       }, 3500);
-   };
-</script>
-</body>
-</html>
+/* Logos que faltan: la página los busca sola en la base pública de iptv-org (logo y web oficial de cada canal) y guarda lo que encuentra */
+var CK='mtv_logos_v1';
+function nm(t){t=t.toLowerCase();if(t.normalize)t=t.normalize('NFD').replace(/[\u0300-\u036f]/g,'');return t.replace(/[^a-z0-9]/g,'')}
+function applyCache(){try{var m=JSON.parse(localStorage.getItem(CK)||'{}'),ch=false;C.forEach(function(c){if(!c[3]&&m[c[0]]){c[3]=m[c[0]];ch=true}});return ch}catch(e){return false}}
+function fetchLogos(){
+var need=C.filter(function(c){return !c[3]});if(!need.length)return;
+try{if(+localStorage.getItem(CK+'_t')>Date.now()-6048e5)return}catch(e){}
+var A='https://iptv-org.github.io/api/';
+Promise.all([fetch(A+'channels.json').then(function(r){return r.json()}),fetch(A+'logos.json').then(function(r){return r.json()})]).then(function(d){
+var pref=['AR','ES','MX','CO','CL','UY','PE','VE','US'],idx={},best={},found={},ch=false;
+d[0].forEach(function(x){[x.name].concat(x.alt_names||[]).forEach(function(k){var n=nm(k||'');if(n&&pref.indexOf(x.country)>-1)(idx[n]=idx[n]||[]).push(x)})});
+d[1].forEach(function(l){var w=(l.feed?0:1e6)+(l.width||0),b=best[l.channel];if(l.url&&(!b||w>b.w))best[l.channel]={w:w,u:l.url}});
+need.forEach(function(c){var list=(idx[nm(c[0])]||[]).sort(function(a,b){return pref.indexOf(a.country)-pref.indexOf(b.country)}),u=null,i;
+for(i=0;i<list.length&&!u;i++)if(best[list[i].id])u=best[list[i].id].u;
+for(i=0;i<list.length&&!u;i++)if(list[i].website)u=G+list[i].website.replace(/^https?:\/\//,'').split('/')[0];
+if(u){c[3]=u;found[c[0]]=u;ch=true}});
+try{var o=JSON.parse(localStorage.getItem(CK)||'{}');for(var k in found)o[k]=found[k];localStorage.setItem(CK,JSON.stringify(o));localStorage.setItem(CK+'_t',Date.now())}catch(e){}
+if(ch)render()}).catch(function(){})}
+/* Logos de tu plataforma (canalesenvivodeargentina.blogspot.com): se leen del feed del blog y reemplazan a los automáticos */
+var BK='mtv_blog_v1',BL='https://canalesenvivodeargentina.blogspot.com/feeds/posts/default?alt=json-in-script&max-results=500',jc=0;
+function jsonp(u,cb){var n='__mtv'+(jc++),t=document.createElement('script');
+function end(){try{delete window[n]}catch(e){window[n]=undefined}if(t.parentNode)t.parentNode.removeChild(t)}
+window[n]=function(d){end();cb(d)};t.onerror=function(){end();cb(null)};t.src=u+'&callback='+n;document.head.appendChild(t)}
+function applyBlog(){try{var m=JSON.parse(localStorage.getItem(BK)||'{}'),ch=false;C.forEach(function(c){if(m[c[0]]&&(!c[3]||c[4])){c[3]=m[c[0]];c[4]=0;ch=true}});return ch}catch(e){return false}}
+function fetchBlog(done){
+try{if(+localStorage.getItem(BK+'_t')>Date.now()-6048e5){done();return}}catch(e){}
+var map={},k=1;
+function page(){jsonp(BL+'&start-index='+k,function(d){
+var es=(d&&d.feed&&d.feed.entry)||[];
+es.forEach(function(e){var t=((e.title&&e.title.$t)||'').replace(/\s*\|?\s*en\s*vivo\s*$/i,''),th=e['media$thumbnail']&&e['media$thumbnail'].url;
+if(t&&th)map[nm(t)]=th.replace(/\/[sw]\d+(-[a-z0-9-]*)?\//i,'/s256/')});
+if(es.length>=500&&k<3000){k+=500;page()}else fin(es.length>0||k>1)})}
+function fin(ok){
+if(!ok){done();return}
+var keys=Object.keys(map),found={},ch=false;
+C.forEach(function(c){var n=nm(c[0]),u=map[n],i,best=null;
+if(!u&&n.length>=4){for(i=0;i<keys.length;i++){var q=keys[i];if((q.indexOf(n)===0||(q.length>=5&&n.indexOf(q)===0))&&(!best||q.length<best.length))best=q}if(best)u=map[best]}
+if(u){found[c[0]]=u;if(!c[3]||c[4]){c[3]=u;c[4]=0;ch=true}}});
+try{localStorage.setItem(BK,JSON.stringify(found));localStorage.setItem(BK+'_t',Date.now())}catch(e){}
+if(ch)render();done()}
+page()}
+applyBlog();applyCache();
+render();
+setTimeout(function(){fetchBlog(fetchLogos)},1500);
+})();
+</script></body></html>
